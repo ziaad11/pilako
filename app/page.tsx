@@ -1,45 +1,57 @@
 "use client";
+
 import { useState } from "react";
 
 export default function Home() {
-  const [topic, setTopic] = useState("");
+  const [idea, setIdea] = useState("");
   const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const generate = async () => {
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      body: JSON.stringify({ topic }),
-    });
+    if (!idea) return;
 
-    const data = await res.json();
-    setResult(data.result);
+    setLoading(true);
+    setResult("");
+
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ idea }),
+      });
+
+      const data = await res.json();
+      setResult(data.result);
+    } catch (error) {
+      setResult("Error generating content");
+    }
+
+    setLoading(false);
   };
 
   return (
-    <main className="min-h-screen bg-black text-white flex items-center justify-center">
-      <div className="w-full max-w-xl text-center">
-        <h1 className="text-4xl font-bold mb-6">
-          Pilako AI 🚀
-        </h1>
+    <main className="flex min-h-screen flex-col items-center justify-center text-white bg-black px-4">
+      <h1 className="text-4xl font-bold mb-6">Pilako AI 🚀</h1>
 
-        <input
-          className="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-600 mb-4 outline-none"
-          placeholder="Enter your topic..."
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-        />
+      <input
+        value={idea}
+        onChange={(e) => setIdea(e.target.value)}
+        placeholder="Enter your topic..."
+        className="w-full max-w-xl p-3 rounded-lg bg-gray-800 text-white border border-gray-700 mb-4 outline-none"
+      />
 
-        <button
-          onClick={generate}
-          className="bg-white text-black px-6 py-2 rounded-lg font-semibold hover:bg-gray-200"
-        >
-          Generate
-        </button>
+      <button
+        onClick={generate}
+        className="bg-white text-black px-6 py-2 rounded-lg font-semibold hover:bg-gray-200"
+      >
+        {loading ? "Generating..." : "Generate"}
+      </button>
 
-        <pre className="mt-6 text-left whitespace-pre-wrap bg-gray-900 p-4 rounded-lg border border-gray-700">
-          {result}
-        </pre>
-      </div>
+      <pre className="mt-6 text-left whitespace-pre-wrap bg-gray-900 p-4 rounded-lg border border-gray-700 w-full max-w-xl">
+        {result}
+      </pre>
     </main>
   );
 }
