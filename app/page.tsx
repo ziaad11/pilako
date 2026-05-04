@@ -16,6 +16,12 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const examples = [
+    "A TikTok ad for handmade candles",
+    "A video about losing belly fat naturally",
+    "A reel selling an AI logo design service",
+  ];
+
   useEffect(() => {
     setIdea("I sell handmade candles and want a viral TikTok ad");
   }, []);
@@ -62,7 +68,7 @@ export default function Home() {
 Script:
 ${result.script}
 
-Score:
+Viral Score:
 ${result.score}/100 - ${result.score_reason}
 
 Improvements:
@@ -70,93 +76,210 @@ ${result.improvements.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
     : "";
 
   return (
-    <main className="min-h-screen bg-[#05030a] text-white px-6 py-10">
-      <div className="mx-auto max-w-5xl text-center">
-        <h1 className="text-5xl font-black mb-4">
-          Pilako AI 🚀
+    <main className="min-h-screen overflow-hidden bg-[#05030a] text-white">
+      <div className="pointer-events-none fixed left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-purple-600/30 blur-3xl" />
+      <div className="pointer-events-none fixed right-10 top-40 h-72 w-72 rounded-full bg-pink-600/20 blur-3xl" />
+
+      <nav className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+        <div className="text-2xl font-black tracking-tight">Pilako</div>
+        <div className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-300 md:block">
+          AI Hook & Script Optimizer
+        </div>
+      </nav>
+
+      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-20 pt-12 text-center">
+        <div className="mx-auto mb-6 w-fit rounded-full border border-purple-400/30 bg-purple-500/10 px-4 py-2 text-sm text-purple-200">
+          ⚡ Built for TikTok, Reels & Shorts creators
+        </div>
+
+        <h1 className="mx-auto max-w-5xl text-5xl font-black leading-tight md:text-7xl">
+          Turn any idea into a{" "}
+          <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-300 bg-clip-text text-transparent">
+            viral video script
+          </span>
         </h1>
 
-        <p className="text-gray-400 mb-8">
-          Turn any idea into a viral TikTok script in seconds.
+        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-400">
+          Generate scroll-stopping hooks, a ready-to-record script, a viral
+          score, and improvement tips in seconds.
         </p>
 
-        <textarea
-          className="w-full min-h-40 p-5 rounded-2xl bg-white text-black outline-none"
-          value={idea}
-          onChange={(e) => setIdea(e.target.value)}
-        />
+        <p className="mt-2 text-sm text-gray-500">
+          Made for creators, small brands, agencies, and TikTok sellers.
+        </p>
 
-        <button
-          onClick={generate}
-          disabled={loading}
-          className="mt-4 w-full bg-gradient-to-r from-purple-500 to-pink-500 py-4 rounded-2xl font-bold"
-        >
-          {loading ? "Generating..." : "Generate 🚀"}
-        </button>
+        <div className="mx-auto mt-10 max-w-3xl rounded-[2rem] border border-white/10 bg-white/5 p-4 shadow-2xl backdrop-blur">
+          <textarea
+            className="min-h-40 w-full resize-none rounded-3xl bg-white p-5 text-black outline-none"
+            placeholder="Example: I sell handmade candles and want a TikTok ad..."
+            value={idea}
+            onChange={(e) => setIdea(e.target.value)}
+          />
 
-        {/* ❌ ERROR + UPGRADE */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {examples.map((ex) => (
+              <button
+                key={ex}
+                onClick={() => setIdea(ex)}
+                className="rounded-full border border-white/10 bg-black/30 px-3 py-2 text-xs text-gray-300 hover:bg-white/10"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={generate}
+            disabled={loading}
+            className="mt-4 w-full rounded-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 py-4 text-lg font-black text-white shadow-lg shadow-pink-500/20 transition hover:scale-[1.01] disabled:opacity-60"
+          >
+            {loading ? "Generating your viral script..." : "Generate Viral Script 🚀"}
+          </button>
+        </div>
+
         {error && (
-          <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center">
-            <p className="text-red-200 mb-4">{error}</p>
+          <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center">
+            <p className="mb-4 text-red-200">{error}</p>
 
             <a
               href="https://buy.stripe.com/test"
               target="_blank"
-              className="inline-block rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 font-bold"
+              className="inline-block rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 font-bold text-white"
             >
               Upgrade to Pro 🚀
             </a>
           </div>
         )}
 
-        {/* ✅ RESULT */}
         {result && (
-          <div className="mt-10 text-left">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Your Result</h2>
+          <div className="mx-auto mt-12 max-w-5xl text-left">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-3xl font-black">Your viral plan</h2>
               <button
                 onClick={() => copyText(fullResultText)}
-                className="bg-white text-black px-4 py-2 rounded-full text-sm"
+                className="rounded-full bg-white px-5 py-2 text-sm font-black text-black"
               >
                 Copy All
               </button>
             </div>
 
-            <div className="bg-black/40 p-6 rounded-2xl space-y-6">
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-xl font-black">🔥 Viral Hooks</h3>
+                  <button
+                    onClick={() => copyText(result.hooks.join("\n"))}
+                    className="rounded-full bg-white px-3 py-1 text-xs font-bold text-black"
+                  >
+                    Copy
+                  </button>
+                </div>
 
-              {/* Hooks */}
-              <div>
-                <h3 className="font-bold mb-2">🔥 Hooks</h3>
-                {result.hooks.map((h, i) => (
-                  <p key={i}>{i + 1}. {h}</p>
-                ))}
+                <div className="space-y-3">
+                  {result.hooks.map((hook, index) => (
+                    <div
+                      key={index}
+                      className="rounded-2xl border border-white/10 bg-black/30 p-4 text-gray-200"
+                    >
+                      <span className="mr-2 text-purple-300">{index + 1}.</span>
+                      {hook}
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Script */}
-              <div>
-                <h3 className="font-bold mb-2">🎬 Script</h3>
-                <p>{result.script}</p>
+              <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-xl font-black">📈 Viral Score</h3>
+                  <button
+                    onClick={() =>
+                      copyText(`${result.score}/100 - ${result.score_reason}`)
+                    }
+                    className="rounded-full bg-white px-3 py-1 text-xs font-bold text-black"
+                  >
+                    Copy
+                  </button>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-6xl font-black text-transparent">
+                  {result.score}/100
+                </div>
+
+                <p className="mt-4 leading-7 text-gray-300">
+                  {result.score_reason}
+                </p>
               </div>
 
-              {/* Score */}
-              <div>
-                <h3 className="font-bold mb-2">📈 Score</h3>
-                <p>{result.score}/100</p>
-                <p className="text-gray-400">{result.score_reason}</p>
+              <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 md:col-span-2">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-xl font-black">🎬 30-Second Script</h3>
+                  <button
+                    onClick={() => copyText(result.script)}
+                    className="rounded-full bg-white px-3 py-1 text-xs font-bold text-black"
+                  >
+                    Copy
+                  </button>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/30 p-5 leading-8 text-gray-200">
+                  {result.script}
+                </div>
               </div>
 
-              {/* Improvements */}
-              <div>
-                <h3 className="font-bold mb-2">✅ Improvements</h3>
-                {result.improvements.map((t, i) => (
-                  <p key={i}>- {t}</p>
-                ))}
-              </div>
+              <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 md:col-span-2">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-xl font-black">✅ Improvements</h3>
+                  <button
+                    onClick={() => copyText(result.improvements.join("\n"))}
+                    className="rounded-full bg-white px-3 py-1 text-xs font-bold text-black"
+                  >
+                    Copy
+                  </button>
+                </div>
 
+                <div className="grid gap-3 md:grid-cols-3">
+                  {result.improvements.map((tip, index) => (
+                    <div
+                      key={index}
+                      className="rounded-2xl border border-white/10 bg-black/30 p-4 leading-7 text-gray-200"
+                    >
+                      {tip}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
-      </div>
+
+        <div className="mx-auto mt-16 max-w-4xl rounded-[2rem] border border-white/10 bg-white/5 p-8 text-left">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <h2 className="text-3xl font-black">Start free.</h2>
+              <p className="mt-3 text-gray-400">
+                Perfect for creators, small brands, agencies, and TikTok sellers.
+              </p>
+            </div>
+
+            <div className="rounded-3xl bg-black/40 p-6">
+              <p className="text-sm text-gray-400">Coming soon</p>
+              <h3 className="mt-2 text-4xl font-black">$9/mo</h3>
+              <p className="mt-2 text-gray-400">
+                Unlimited hooks, scripts, scores, and creator tools.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 text-center">
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-4 font-bold"
+          >
+            Try Another Idea 🚀
+          </button>
+        </div>
+      </section>
     </main>
   );
 }
