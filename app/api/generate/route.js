@@ -4,69 +4,44 @@ export async function POST(req) {
   try {
     const { idea } = await req.json();
 
-    if (!idea || idea.trim().length < 2) {
-      return Response.json(
-        { result: "Please enter a clear video idea first." },
-        { status: 400 }
-      );
-    }
-
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const completion = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.9,
+      response_format: { type: "json_object" },
       messages: [
-        {
-          role: "system",
-          content:
-            "You are a world-class short-form content strategist for TikTok, Instagram Reels, YouTube Shorts, and paid ads. Your job is to create high-retention viral hooks and scripts.",
-        },
         {
           role: "user",
           content: `
-Create high-performing short-form content for this idea:
+You are a viral short-form video strategist.
 
-"${idea}"
+Video idea:
+${idea}
 
-Return the answer in this exact format:
+Return ONLY valid JSON with this exact structure:
+{
+  "hooks": ["hook 1", "hook 2", "hook 3", "hook 4", "hook 5"],
+  "script": "30-second ready-to-record script",
+  "score": 85,
+  "score_reason": "short explanation why",
+  "improvements": ["tip 1", "tip 2", "tip 3"]
+}
 
-🔥 VIRAL SCORE: /100
-
-🎯 BEST ANGLE:
-One clear angle that will make people stop scrolling.
-
-🧲 5 VIRAL HOOKS:
-1.
-2.
-3.
-4.
-5.
-
-🎬 30-SECOND SCRIPT:
-Hook:
-Main points:
-Ending CTA:
-
-🚀 IMPROVEMENTS:
-- 
-- 
-- 
-
-Make it punchy, practical, and optimized for retention.
+Make it optimized for TikTok, Instagram Reels, and YouTube Shorts.
           `,
         },
       ],
     });
 
-    return Response.json({
-      result: completion.choices[0].message.content,
-    });
+    const content = response.choices[0].message.content;
+    return Response.json(JSON.parse(content));
   } catch (error) {
     return Response.json(
-      { result: "Server error: " + error.message },
+      {
+        error: "AI generation failed. Check your API key or credits.",
+      },
       { status: 500 }
     );
   }
