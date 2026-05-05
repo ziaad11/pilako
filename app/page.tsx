@@ -45,11 +45,8 @@ export default function Home() {
 
       const data = await res.json();
 
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setResult(data);
-      }
+      if (data.error) setError(data.error);
+      else setResult(data);
     } catch {
       setError("Error happened. Please try again.");
     }
@@ -82,9 +79,12 @@ ${result.improvements.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
 
       <nav className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <div className="text-2xl font-black tracking-tight">Pilako</div>
-        <div className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-300 md:block">
-          AI Hook & Script Optimizer
-        </div>
+        <a
+          href="#pricing"
+          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-300 hover:bg-white/10"
+        >
+          Pricing
+        </a>
       </nav>
 
       <section className="relative z-10 mx-auto max-w-6xl px-6 pb-20 pt-12 text-center">
@@ -140,7 +140,6 @@ ${result.improvements.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
         {error && (
           <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center">
             <p className="mb-4 text-red-200">{error}</p>
-
             <a
               href="https://buy.stripe.com/test"
               target="_blank"
@@ -165,22 +164,10 @@ ${result.improvements.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
 
             <div className="grid gap-5 md:grid-cols-2">
               <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-xl font-black">🔥 Viral Hooks</h3>
-                  <button
-                    onClick={() => copyText(result.hooks.join("\n"))}
-                    className="rounded-full bg-white px-3 py-1 text-xs font-bold text-black"
-                  >
-                    Copy
-                  </button>
-                </div>
-
+                <h3 className="mb-4 text-xl font-black">🔥 Viral Hooks</h3>
                 <div className="space-y-3">
                   {result.hooks.map((hook, index) => (
-                    <div
-                      key={index}
-                      className="rounded-2xl border border-white/10 bg-black/30 p-4 text-gray-200"
-                    >
+                    <div key={index} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-gray-200">
                       <span className="mr-2 text-purple-300">{index + 1}.</span>
                       {hook}
                     </div>
@@ -189,60 +176,25 @@ ${result.improvements.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
               </div>
 
               <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-xl font-black">📈 Viral Score</h3>
-                  <button
-                    onClick={() =>
-                      copyText(`${result.score}/100 - ${result.score_reason}`)
-                    }
-                    className="rounded-full bg-white px-3 py-1 text-xs font-bold text-black"
-                  >
-                    Copy
-                  </button>
-                </div>
-
+                <h3 className="mb-4 text-xl font-black">📈 Viral Score</h3>
                 <div className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-6xl font-black text-transparent">
                   {result.score}/100
                 </div>
-
-                <p className="mt-4 leading-7 text-gray-300">
-                  {result.score_reason}
-                </p>
+                <p className="mt-4 leading-7 text-gray-300">{result.score_reason}</p>
               </div>
 
               <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 md:col-span-2">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-xl font-black">🎬 30-Second Script</h3>
-                  <button
-                    onClick={() => copyText(result.script)}
-                    className="rounded-full bg-white px-3 py-1 text-xs font-bold text-black"
-                  >
-                    Copy
-                  </button>
-                </div>
-
+                <h3 className="mb-4 text-xl font-black">🎬 30-Second Script</h3>
                 <div className="rounded-2xl border border-white/10 bg-black/30 p-5 leading-8 text-gray-200">
                   {result.script}
                 </div>
               </div>
 
               <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 md:col-span-2">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-xl font-black">✅ Improvements</h3>
-                  <button
-                    onClick={() => copyText(result.improvements.join("\n"))}
-                    className="rounded-full bg-white px-3 py-1 text-xs font-bold text-black"
-                  >
-                    Copy
-                  </button>
-                </div>
-
+                <h3 className="mb-4 text-xl font-black">✅ Improvements</h3>
                 <div className="grid gap-3 md:grid-cols-3">
                   {result.improvements.map((tip, index) => (
-                    <div
-                      key={index}
-                      className="rounded-2xl border border-white/10 bg-black/30 p-4 leading-7 text-gray-200"
-                    >
+                    <div key={index} className="rounded-2xl border border-white/10 bg-black/30 p-4 leading-7 text-gray-200">
                       {tip}
                     </div>
                   ))}
@@ -252,33 +204,53 @@ ${result.improvements.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
           </div>
         )}
 
-        <div className="mx-auto mt-16 max-w-4xl rounded-[2rem] border border-white/10 bg-white/5 p-8 text-left">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <h2 className="text-3xl font-black">Start free.</h2>
-              <p className="mt-3 text-gray-400">
-                Perfect for creators, small brands, agencies, and TikTok sellers.
-              </p>
+        <div id="pricing" className="mx-auto mt-16 max-w-5xl">
+          <h2 className="text-4xl font-black">Simple pricing</h2>
+          <p className="mt-3 text-gray-400">Start free. Upgrade when you need more.</p>
+
+          <div className="mt-8 grid gap-5 md:grid-cols-2">
+            <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 text-left">
+              <p className="text-sm text-gray-400">Free</p>
+              <h3 className="mt-2 text-4xl font-black">$0</h3>
+              <p className="mt-3 text-gray-400">3 generations per day.</p>
             </div>
 
-            <div className="rounded-3xl bg-black/40 p-6">
-              <p className="text-sm text-gray-400">Coming soon</p>
+            <div className="rounded-[2rem] border border-purple-400/30 bg-purple-500/10 p-8 text-left">
+              <p className="text-sm text-purple-200">Pro</p>
               <h3 className="mt-2 text-4xl font-black">$9/mo</h3>
-              <p className="mt-2 text-gray-400">
-                Unlimited hooks, scripts, scores, and creator tools.
+              <p className="mt-3 text-gray-300">
+                Unlimited hooks, scripts, viral scores, and improvements.
               </p>
+              <a
+                href="https://buy.stripe.com/test"
+                target="_blank"
+                className="mt-6 inline-block rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 font-bold"
+              >
+                Upgrade to Pro 🚀
+              </a>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 text-center">
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-4 font-bold"
-          >
-            Try Another Idea 🚀
-          </button>
+        <div className="mx-auto mt-16 max-w-4xl text-left">
+          <h2 className="text-center text-4xl font-black">FAQ</h2>
+          <div className="mt-8 space-y-4">
+            {[
+              ["What is Pilako?", "Pilako turns your video idea into viral hooks, scripts, scores, and improvements."],
+              ["Who is it for?", "Creators, small brands, agencies, TikTok sellers, and anyone making short-form videos."],
+              ["Is it free?", "Yes. You can start free with a limited number of generations."],
+            ].map(([q, a]) => (
+              <div key={q} className="rounded-3xl border border-white/10 bg-white/5 p-6">
+                <h3 className="font-black">{q}</h3>
+                <p className="mt-2 text-gray-400">{a}</p>
+              </div>
+            ))}
+          </div>
         </div>
+
+        <footer className="mt-20 border-t border-white/10 pt-8 text-sm text-gray-500">
+          © 2026 Pilako. Built for creators.
+        </footer>
       </section>
     </main>
   );
