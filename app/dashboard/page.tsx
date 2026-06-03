@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 const demoLeads = [
   {
+    id: 1,
     company: "Miami Yacht Services",
     website: "miamiyachtservices.com",
     email: "info@miamiyachtservices.com",
@@ -12,6 +13,7 @@ const demoLeads = [
     score: "94%",
   },
   {
+    id: 2,
     company: "Atlantic Marine Repair",
     website: "atlanticmarinerepair.com",
     email: "contact@atlanticmarinerepair.com",
@@ -20,6 +22,7 @@ const demoLeads = [
     score: "91%",
   },
   {
+    id: 3,
     company: "Biscayne Yacht Care",
     website: "biscayneyachtcare.com",
     email: "hello@biscayneyachtcare.com",
@@ -33,15 +36,27 @@ export default function Dashboard() {
   const [niche, setNiche] = useState("yacht repair companies");
   const [location, setLocation] = useState("Miami");
   const [leads, setLeads] = useState(demoLeads);
+  const [selectedIds, setSelectedIds] = useState<number[]>([1, 2, 3]);
+  const [copied, setCopied] = useState("");
+  const [outreach, setOutreach] = useState({
+    cold: "",
+    follow1: "",
+    follow2: "",
+  });
+
+  const selectedLeads = leads.filter((lead) => selectedIds.includes(lead.id));
 
   const stats = useMemo(() => {
     return {
       total: leads.length,
       emails: leads.filter((lead) => lead.email).length,
       websites: leads.filter((lead) => lead.website).length,
-      outreach: leads.length,
+      selected: selectedLeads.length,
     };
-  }, [leads]);
+  }, [leads, selectedLeads.length]);
+
+  const buttonBase =
+    "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0";
 
   function handleSearch() {
     setLeads(
@@ -50,12 +65,21 @@ export default function Dashboard() {
         location: location ? `${location}, USA` : lead.location,
       }))
     );
+    setSelectedIds([1, 2, 3]);
+  }
+
+  function toggleLead(id: number) {
+    setSelectedIds((current) =>
+      current.includes(id)
+        ? current.filter((leadId) => leadId !== id)
+        : [...current, id]
+    );
   }
 
   function exportCSV() {
     const headers = ["Company", "Website", "Email", "Phone", "Location", "Score"];
 
-    const rows = leads.map((lead) => [
+    const rows = selectedLeads.map((lead) => [
       lead.company,
       lead.website,
       lead.email,
@@ -84,8 +108,59 @@ export default function Dashboard() {
     URL.revokeObjectURL(url);
   }
 
-  const buttonBase =
-    "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0";
+  function generateOutreach() {
+    const target = selectedLeads[0]?.company || "your company";
+
+    setOutreach({
+      cold: `Subject: Quick question about ${niche}
+
+Hi,
+
+I came across ${target} while researching ${niche} in ${location}. I noticed your business serves a very specific market, and I wanted to reach out with a simple idea.
+
+We help businesses find more targeted opportunities by identifying prospects, collecting useful public contact information, and preparing personalized outreach campaigns.
+
+Would you be open to a quick conversation this week?
+
+Best,
+Pilako`,
+
+      follow1: `Subject: Following up
+
+Hi,
+
+Just wanted to follow up on my previous message.
+
+I was looking at companies in the ${niche} space around ${location}, and I think there may be a simple way to help you reach more potential customers without spending hours on manual prospecting.
+
+Would it make sense to share a quick example?
+
+Best,
+Pilako`,
+
+      follow2: `Subject: Last quick note
+
+Hi,
+
+I know inboxes get busy, so I’ll keep this short.
+
+If growing your customer pipeline is a priority, Pilako can help prepare targeted lead lists and outreach messages much faster than doing it manually.
+
+Happy to leave it here if now is not the right time.
+
+Best,
+Pilako`,
+    });
+  }
+
+  async function copyText(label: string, text: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(label);
+
+    setTimeout(() => {
+      setCopied("");
+    }, 1600);
+  }
 
   return (
     <main className="min-h-screen bg-[#020617] text-white">
@@ -109,8 +184,7 @@ export default function Dashboard() {
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Find leads</h2>
           <p className="mt-2 text-slate-400">
-            Enter a niche and location. Pilako will prepare a lead list and
-            outreach campaign.
+            Enter a niche and location. Pilako will prepare a lead list and outreach campaign.
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_auto]">
@@ -140,7 +214,7 @@ export default function Dashboard() {
             [String(stats.total), "Leads found"],
             [String(stats.emails), "Emails found"],
             [String(stats.websites), "Websites found"],
-            [String(stats.outreach), "Outreach drafts"],
+            [String(stats.selected), "Selected leads"],
           ].map(([number, label]) => (
             <div
               key={label}
@@ -157,7 +231,7 @@ export default function Dashboard() {
             <div>
               <h2 className="text-2xl font-black">Lead results</h2>
               <p className="mt-2 text-slate-400">
-                Demo data now. Real lead search integration comes next.
+                Select leads, export CSV, or generate outreach.
               </p>
             </div>
 
@@ -169,6 +243,7 @@ export default function Dashboard() {
                 Export CSV
               </button>
               <button
+                onClick={generateOutreach}
                 className={`${buttonBase} rounded-full bg-white px-5 py-3 font-black text-black hover:bg-cyan-200`}
               >
                 Generate Outreach
@@ -177,9 +252,10 @@ export default function Dashboard() {
           </div>
 
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[900px] border-collapse text-left">
+            <table className="w-full min-w-[980px] border-collapse text-left">
               <thead className="bg-white/[0.06] text-sm text-slate-300">
                 <tr>
+                  <th className="px-5 py-4">Select</th>
                   <th className="px-5 py-4">Company</th>
                   <th className="px-5 py-4">Website</th>
                   <th className="px-5 py-4">Email</th>
@@ -191,9 +267,17 @@ export default function Dashboard() {
               <tbody>
                 {leads.map((lead) => (
                   <tr
-                    key={lead.company}
+                    key={lead.id}
                     className="border-t border-white/10 transition-colors duration-200 hover:bg-white/[0.04]"
                   >
+                    <td className="px-5 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(lead.id)}
+                        onChange={() => toggleLead(lead.id)}
+                        className="h-5 w-5 cursor-pointer accent-cyan-300"
+                      />
+                    </td>
                     <td className="px-5 py-4 font-bold">{lead.company}</td>
                     <td className="px-5 py-4 text-cyan-300">{lead.website}</td>
                     <td className="px-5 py-4 text-slate-300">{lead.email}</td>
@@ -211,44 +295,32 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-            <h2 className="text-2xl font-black">AI outreach draft</h2>
-            <div className="mt-5 rounded-2xl bg-black/30 p-5 text-slate-300">
-              <p className="font-bold text-white">
-                Subject: Quick question about your services
-              </p>
-              <p className="mt-4 leading-7">
-                Hi, I came across your company while researching {niche} in{" "}
-                {location}. I noticed your business could be a strong fit for a
-                targeted outreach campaign.
-              </p>
-              <p className="mt-4 leading-7">
-                I wanted to reach out because there may be a simple way to help
-                you attract more customers who are already searching for your
-                service.
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-            <h2 className="text-2xl font-black">Campaign actions</h2>
-            <div className="mt-5 grid gap-3">
-              {[
-                "Save campaign",
-                "Export leads",
-                "Generate follow-up 1",
-                "Generate follow-up 2",
-              ].map((item) => (
+        <section className="mt-8 grid gap-6 lg:grid-cols-3">
+          {[
+            ["Cold email", outreach.cold],
+            ["Follow-up 1", outreach.follow1],
+            ["Follow-up 2", outreach.follow2],
+          ].map(([title, text]) => (
+            <div
+              key={title}
+              className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-xl font-black">{title}</h2>
                 <button
-                  key={item}
-                  className={`${buttonBase} rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-left font-bold hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-100`}
+                  onClick={() => copyText(title, text)}
+                  disabled={!text}
+                  className={`${buttonBase} rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-40`}
                 >
-                  {item}
+                  {copied === title ? "Copied!" : "Copy"}
                 </button>
-              ))}
+              </div>
+
+              <div className="mt-5 min-h-[280px] whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-slate-300">
+                {text || "Click “Generate Outreach” to create this message."}
+              </div>
             </div>
-          </div>
+          ))}
         </section>
       </div>
     </main>
