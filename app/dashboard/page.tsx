@@ -2,7 +2,17 @@
 
 import { useMemo, useState } from "react";
 
-const demoLeads = [
+type Lead = {
+  id: number;
+  company: string;
+  website: string;
+  email: string;
+  phone: string;
+  location: string;
+  score: string;
+};
+
+const demoLeads: Lead[] = [
   {
     id: 1,
     company: "Miami Yacht Services",
@@ -35,10 +45,19 @@ const demoLeads = [
 export default function Dashboard() {
   const [niche, setNiche] = useState("yacht repair companies");
   const [location, setLocation] = useState("Miami");
-  const [leads, setLeads] = useState(demoLeads);
+  const [leads, setLeads] = useState<Lead[]>(demoLeads);
   const [selectedIds, setSelectedIds] = useState<number[]>([1, 2, 3]);
   const [copied, setCopied] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [newLead, setNewLead] = useState({
+    company: "",
+    website: "",
+    email: "",
+    phone: "",
+    location: "",
+  });
+
   const [outreach, setOutreach] = useState({
     cold: "",
     follow1: "",
@@ -67,6 +86,33 @@ export default function Dashboard() {
       }))
     );
     setSelectedIds([1, 2, 3]);
+  }
+
+  function addLead() {
+    if (!newLead.company.trim()) return;
+
+    const id = Date.now();
+
+    const lead: Lead = {
+      id,
+      company: newLead.company.trim(),
+      website: newLead.website.trim() || "Not provided",
+      email: newLead.email.trim() || "Not provided",
+      phone: newLead.phone.trim() || "Not provided",
+      location: newLead.location.trim() || location || "Not provided",
+      score: "New",
+    };
+
+    setLeads((current) => [lead, ...current]);
+    setSelectedIds((current) => [id, ...current]);
+
+    setNewLead({
+      company: "",
+      website: "",
+      email: "",
+      phone: "",
+      location: "",
+    });
   }
 
   function toggleLead(id: number) {
@@ -182,7 +228,7 @@ export default function Dashboard() {
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Find leads</h2>
           <p className="mt-2 text-slate-400">
-            Enter a niche and location. Pilako will prepare a lead list and outreach campaign.
+            Search demo leads, add your own leads, export CSV, and generate AI outreach.
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_auto]">
@@ -202,7 +248,67 @@ export default function Dashboard() {
               onClick={handleSearch}
               className={`${buttonBase} rounded-2xl bg-cyan-300 px-8 py-4 font-black text-black shadow-[0_0_35px_rgba(103,232,249,0.25)] hover:bg-cyan-200 hover:shadow-[0_0_55px_rgba(103,232,249,0.45)]`}
             >
-              Search Leads
+              Search Demo
+            </button>
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+          <h2 className="text-2xl font-black">Add your own lead</h2>
+          <p className="mt-2 text-slate-400">
+            Add real leads manually while we prepare the real search API.
+          </p>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-5">
+            <input
+              value={newLead.company}
+              onChange={(e) =>
+                setNewLead((current) => ({
+                  ...current,
+                  company: e.target.value,
+                }))
+              }
+              className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
+              placeholder="Company name"
+            />
+            <input
+              value={newLead.website}
+              onChange={(e) =>
+                setNewLead((current) => ({
+                  ...current,
+                  website: e.target.value,
+                }))
+              }
+              className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
+              placeholder="Website"
+            />
+            <input
+              value={newLead.email}
+              onChange={(e) =>
+                setNewLead((current) => ({
+                  ...current,
+                  email: e.target.value,
+                }))
+              }
+              className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
+              placeholder="Email"
+            />
+            <input
+              value={newLead.phone}
+              onChange={(e) =>
+                setNewLead((current) => ({
+                  ...current,
+                  phone: e.target.value,
+                }))
+              }
+              className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
+              placeholder="Phone"
+            />
+            <button
+              onClick={addLead}
+              className={`${buttonBase} rounded-2xl bg-white px-6 py-4 font-black text-black hover:bg-cyan-200`}
+            >
+              Add Lead
             </button>
           </div>
         </section>
