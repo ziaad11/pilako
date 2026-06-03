@@ -43,12 +43,13 @@ const demoLeads: Lead[] = [
 ];
 
 export default function Dashboard() {
-  const [niche, setNiche] = useState("yacht repair companies");
-  const [location, setLocation] = useState("Miami");
+  const [niche, setNiche] = useState("law firms");
+  const [location, setLocation] = useState("Dubai");
   const [leads, setLeads] = useState<Lead[]>(demoLeads);
   const [selectedIds, setSelectedIds] = useState<number[]>([1, 2, 3]);
   const [copied, setCopied] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [loadingOutreach, setLoadingOutreach] = useState(false);
 
   const [newLead, setNewLead] = useState({
     company: "",
@@ -69,8 +70,8 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     return {
       total: leads.length,
-      emails: leads.filter((lead) => lead.email).length,
-      websites: leads.filter((lead) => lead.website).length,
+      emails: leads.filter((lead) => lead.email && lead.email !== "Not found").length,
+      websites: leads.filter((lead) => lead.website && lead.website !== "Not found").length,
       selected: selectedLeads.length,
     };
   }, [leads, selectedLeads.length]);
@@ -78,14 +79,42 @@ export default function Dashboard() {
   const buttonBase =
     "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0";
 
-  function handleSearch() {
-    setLeads(
-      demoLeads.map((lead) => ({
-        ...lead,
-        location: location ? `${location}, USA` : lead.location,
-      }))
-    );
-    setSelectedIds([1, 2, 3]);
+  async function handleSearch() {
+    try {
+      setLoadingSearch(true);
+
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          niche,
+          location,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch leads");
+      }
+
+      const newLeads: Lead[] = data.leads || [];
+
+      setLeads(newLeads);
+      setSelectedIds(newLeads.map((lead) => lead.id));
+      setOutreach({
+        cold: "",
+        follow1: "",
+        follow2: "",
+      });
+    } catch (error) {
+      console.error(error);
+      alert("Failed to fetch real leads. Please check SERPAPI_API_KEY or try again.");
+    } finally {
+      setLoadingSearch(false);
+    }
   }
 
   function addLead() {
@@ -157,7 +186,7 @@ export default function Dashboard() {
 
   async function generateOutreach() {
     try {
-      setLoading(true);
+      setLoadingOutreach(true);
 
       const targetCompany = selectedLeads[0]?.company || "the selected company";
 
@@ -193,7 +222,7 @@ export default function Dashboard() {
         follow2: "",
       });
     } finally {
-      setLoading(false);
+      setLoadingOutreach(false);
     }
   }
 
@@ -226,9 +255,9 @@ export default function Dashboard() {
         </nav>
 
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-          <h2 className="text-2xl font-black">Find leads</h2>
+          <h2 className="text-2xl font-black">Find real leads</h2>
           <p className="mt-2 text-slate-400">
-            Search demo leads, add your own leads, export CSV, and generate AI outreach.
+            Search real businesses, add your own leads, export CSV, and generate AI outreach.
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_auto]">
@@ -236,19 +265,20 @@ export default function Dashboard() {
               value={niche}
               onChange={(e) => setNiche(e.target.value)}
               className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
-              placeholder="Niche e.g. yacht repair companies"
+              placeholder="Niche e.g. law firms"
             />
             <input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
-              placeholder="Location e.g. Miami"
+              placeholder="Location e.g. Dubai"
             />
             <button
               onClick={handleSearch}
-              className={`${buttonBase} rounded-2xl bg-cyan-300 px-8 py-4 font-black text-black shadow-[0_0_35px_rgba(103,232,249,0.25)] hover:bg-cyan-200 hover:shadow-[0_0_55px_rgba(103,232,249,0.45)]`}
+              disabled={loadingSearch}
+              className={`${buttonBase} rounded-2xl bg-cyan-300 px-8 py-4 font-black text-black shadow-[0_0_35px_rgba(103,232,249,0.25)] hover:bg-cyan-200 hover:shadow-[0_0_55px_rgba(103,232,249,0.45)] disabled:cursor-not-allowed disabled:opacity-60`}
             >
-              Search Demo
+              {loadingSearch ? "Searching..." : "Search Leads"}
             </button>
           </div>
         </section>
@@ -256,7 +286,7 @@ export default function Dashboard() {
         <section className="mt-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Add your own lead</h2>
           <p className="mt-2 text-slate-400">
-            Add real leads manually while we prepare the real search API.
+            Add leads manually when you already have a company, website, or email.
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-5">
@@ -348,10 +378,10 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={generateOutreach}
-                disabled={loading}
+                disabled={loadingOutreach}
                 className={`${buttonBase} rounded-full bg-white px-5 py-3 font-black text-black hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60`}
               >
-                {loading ? "Generating..." : "Generate AI Outreach"}
+                {loadingOutreach ? "Generating..." : "Generate AI Outreach"}
               </button>
             </div>
           </div>
@@ -370,31 +400,39 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {leads.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    className="border-t border-white/10 transition-colors duration-200 hover:bg-white/[0.04]"
-                  >
-                    <td className="px-5 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(lead.id)}
-                        onChange={() => toggleLead(lead.id)}
-                        className="h-5 w-5 cursor-pointer accent-cyan-300"
-                      />
-                    </td>
-                    <td className="px-5 py-4 font-bold">{lead.company}</td>
-                    <td className="px-5 py-4 text-cyan-300">{lead.website}</td>
-                    <td className="px-5 py-4 text-slate-300">{lead.email}</td>
-                    <td className="px-5 py-4 text-slate-300">{lead.phone}</td>
-                    <td className="px-5 py-4 text-slate-300">{lead.location}</td>
-                    <td className="px-5 py-4">
-                      <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-sm font-bold text-cyan-200">
-                        {lead.score}
-                      </span>
+                {leads.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-10 text-center text-slate-400">
+                      No leads found. Try another niche or location.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  leads.map((lead) => (
+                    <tr
+                      key={lead.id}
+                      className="border-t border-white/10 transition-colors duration-200 hover:bg-white/[0.04]"
+                    >
+                      <td className="px-5 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(lead.id)}
+                          onChange={() => toggleLead(lead.id)}
+                          className="h-5 w-5 cursor-pointer accent-cyan-300"
+                        />
+                      </td>
+                      <td className="px-5 py-4 font-bold">{lead.company}</td>
+                      <td className="px-5 py-4 text-cyan-300">{lead.website}</td>
+                      <td className="px-5 py-4 text-slate-300">{lead.email}</td>
+                      <td className="px-5 py-4 text-slate-300">{lead.phone}</td>
+                      <td className="px-5 py-4 text-slate-300">{lead.location}</td>
+                      <td className="px-5 py-4">
+                        <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-sm font-bold text-cyan-200">
+                          {lead.score}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
