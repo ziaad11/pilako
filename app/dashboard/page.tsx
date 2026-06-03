@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [leads, setLeads] = useState(demoLeads);
   const [selectedIds, setSelectedIds] = useState<number[]>([1, 2, 3]);
   const [copied, setCopied] = useState("");
+  const [loading, setLoading] = useState(false);
   const [outreach, setOutreach] = useState({
     cold: "",
     follow1: "",
@@ -108,49 +109,46 @@ export default function Dashboard() {
     URL.revokeObjectURL(url);
   }
 
-  function generateOutreach() {
-    const target = selectedLeads[0]?.company || "your company";
+  async function generateOutreach() {
+    try {
+      setLoading(true);
 
-    setOutreach({
-      cold: `Subject: Quick question about ${niche}
+      const targetCompany = selectedLeads[0]?.company || "the selected company";
 
-Hi,
+      const response = await fetch("/api/outreach", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          niche,
+          location,
+          company: targetCompany,
+        }),
+      });
 
-I came across ${target} while researching ${niche} in ${location}. I noticed your business serves a very specific market, and I wanted to reach out with a simple idea.
+      const data = await response.json();
 
-We help businesses find more targeted opportunities by identifying prospects, collecting useful public contact information, and preparing personalized outreach campaigns.
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate outreach");
+      }
 
-Would you be open to a quick conversation this week?
+      setOutreach({
+        cold: data.cold || "",
+        follow1: data.follow1 || "",
+        follow2: data.follow2 || "",
+      });
+    } catch (error) {
+      console.error(error);
 
-Best,
-Pilako`,
-
-      follow1: `Subject: Following up
-
-Hi,
-
-Just wanted to follow up on my previous message.
-
-I was looking at companies in the ${niche} space around ${location}, and I think there may be a simple way to help you reach more potential customers without spending hours on manual prospecting.
-
-Would it make sense to share a quick example?
-
-Best,
-Pilako`,
-
-      follow2: `Subject: Last quick note
-
-Hi,
-
-I know inboxes get busy, so I’ll keep this short.
-
-If growing your customer pipeline is a priority, Pilako can help prepare targeted lead lists and outreach messages much faster than doing it manually.
-
-Happy to leave it here if now is not the right time.
-
-Best,
-Pilako`,
-    });
+      setOutreach({
+        cold: "Error: Pilako could not generate outreach right now. Please check your OpenAI API key or try again.",
+        follow1: "",
+        follow2: "",
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function copyText(label: string, text: string) {
@@ -231,7 +229,7 @@ Pilako`,
             <div>
               <h2 className="text-2xl font-black">Lead results</h2>
               <p className="mt-2 text-slate-400">
-                Select leads, export CSV, or generate outreach.
+                Select leads, export CSV, or generate AI outreach.
               </p>
             </div>
 
@@ -244,9 +242,10 @@ Pilako`,
               </button>
               <button
                 onClick={generateOutreach}
-                className={`${buttonBase} rounded-full bg-white px-5 py-3 font-black text-black hover:bg-cyan-200`}
+                disabled={loading}
+                className={`${buttonBase} rounded-full bg-white px-5 py-3 font-black text-black hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60`}
               >
-                Generate Outreach
+                {loading ? "Generating..." : "Generate AI Outreach"}
               </button>
             </div>
           </div>
@@ -317,7 +316,7 @@ Pilako`,
               </div>
 
               <div className="mt-5 min-h-[280px] whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-slate-300">
-                {text || "Click “Generate Outreach” to create this message."}
+                {text || "Click “Generate AI Outreach” to create this message with OpenAI."}
               </div>
             </div>
           ))}
