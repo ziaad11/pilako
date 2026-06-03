@@ -61,9 +61,12 @@ export default function Home() {
           </p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <button className="rounded-full bg-cyan-300 px-8 py-4 font-black text-slate-950 shadow-[0_0_60px_rgba(103,232,249,0.35)]">
-              Find My First Leads
-            </button>
+            <a
+  href="/dashboard"
+  className="rounded-full bg-cyan-300 px-8 py-4 font-black text-slate-950 shadow-[0_0_60px_rgba(103,232,249,0.35)]"
+>
+  Find My First Leads
+</a>
             <button className="rounded-full border border-white/15 bg-white/[0.06] px-8 py-4 font-bold backdrop-blur">
               View Demo
             </button>
