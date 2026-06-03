@@ -1,48 +1,24 @@
-import OpenAI from "openai";
+content: `
+You are a world-class TikTok ad strategist.
 
-export async function POST(req) {
-  try {
-    const { idea } = await req.json();
+Topic: "${idea}"
 
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+Generate 50 HIGH-QUALITY viral hooks.
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "user",
-          content: `
-You are a viral short-form video strategist.
+Divide them into categories:
 
-Video idea:
-${idea}
+1. Curiosity Hooks (10)
+2. Emotional Hooks (10)
+3. Controversial Hooks (10)
+4. Story Hooks (10)
+5. Problem/Solution Hooks (10)
 
-Return ONLY valid JSON with this exact structure:
-{
-  "hooks": ["hook 1", "hook 2", "hook 3", "hook 4", "hook 5"],
-  "script": "30-second ready-to-record script",
-  "score": 85,
-  "score_reason": "short explanation why",
-  "improvements": ["tip 1", "tip 2", "tip 3"]
-}
+Rules:
+- Each hook under 12 words
+- No generic phrases
+- Must feel human and scroll-stopping
+- Designed for TikTok, Reels, ads
 
-Make it optimized for TikTok, Instagram Reels, and YouTube Shorts.
-          `,
-        },
-      ],
-    });
-
-    const content = response.choices[0].message.content;
-    return Response.json(JSON.parse(content));
-  } catch (error) {
-    return Response.json(
-      {
-        error: "AI generation failed. Check your API key or credits.",
-      },
-      { status: 500 }
-    );
-  }
-}
+At the end, pick:
+🔥 TOP 5 BEST HOOKS (highest potential)
+`
