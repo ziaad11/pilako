@@ -17,7 +17,7 @@ const demoLeads: Lead[] = [
     id: 1,
     company: "Miami Yacht Services",
     website: "miamiyachtservices.com",
-    email: "info@miamiyachtservices.com",
+    email: "Not found",
     phone: "+1 305 555 0182",
     location: "Miami, USA",
     score: "94%",
@@ -26,7 +26,7 @@ const demoLeads: Lead[] = [
     id: 2,
     company: "Atlantic Marine Repair",
     website: "atlanticmarinerepair.com",
-    email: "contact@atlanticmarinerepair.com",
+    email: "Not found",
     phone: "+1 305 555 0144",
     location: "Miami, USA",
     score: "91%",
@@ -35,7 +35,7 @@ const demoLeads: Lead[] = [
     id: 3,
     company: "Biscayne Yacht Care",
     website: "biscayneyachtcare.com",
-    email: "hello@biscayneyachtcare.com",
+    email: "Not found",
     phone: "+1 305 555 0199",
     location: "Miami, USA",
     score: "88%",
@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [selectedIds, setSelectedIds] = useState<number[]>([1, 2, 3]);
   const [copied, setCopied] = useState("");
   const [loadingSearch, setLoadingSearch] = useState(false);
+  const [loadingEmails, setLoadingEmails] = useState(false);
   const [loadingOutreach, setLoadingOutreach] = useState(false);
 
   const [newLead, setNewLead] = useState({
@@ -70,8 +71,18 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     return {
       total: leads.length,
-      emails: leads.filter((lead) => lead.email && lead.email !== "Not found").length,
-      websites: leads.filter((lead) => lead.website && lead.website !== "Not found").length,
+      emails: leads.filter(
+        (lead) =>
+          lead.email &&
+          lead.email !== "Not found" &&
+          lead.email !== "Not provided"
+      ).length,
+      websites: leads.filter(
+        (lead) =>
+          lead.website &&
+          lead.website !== "Not found" &&
+          lead.website !== "Not provided"
+      ).length,
       selected: selectedLeads.length,
     };
   }, [leads, selectedLeads.length]);
@@ -104,16 +115,48 @@ export default function Dashboard() {
 
       setLeads(newLeads);
       setSelectedIds(newLeads.map((lead) => lead.id));
-      setOutreach({
-        cold: "",
-        follow1: "",
-        follow2: "",
-      });
+      setOutreach({ cold: "", follow1: "", follow2: "" });
     } catch (error) {
       console.error(error);
-      alert("Failed to fetch real leads. Please check SERPAPI_API_KEY or try again.");
+      alert("Failed to fetch real leads. Please check SERPAPI_API_KEY.");
     } finally {
       setLoadingSearch(false);
+    }
+  }
+
+  async function findEmails() {
+    try {
+      setLoadingEmails(true);
+
+      const response = await fetch("/api/email-finder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          leads: selectedLeads,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to find emails");
+      }
+
+      const enrichedLeads: Lead[] = data.leads || [];
+
+      setLeads((current) =>
+        current.map((lead) => {
+          const enriched = enrichedLeads.find((item) => item.id === lead.id);
+          return enriched || lead;
+        })
+      );
+    } catch (error) {
+      console.error(error);
+      alert("Failed to find emails. Some websites may block public scraping.");
+    } finally {
+      setLoadingEmails(false);
     }
   }
 
@@ -257,7 +300,7 @@ export default function Dashboard() {
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Find real leads</h2>
           <p className="mt-2 text-slate-400">
-            Search real businesses, add your own leads, export CSV, and generate AI outreach.
+            Search businesses, find public emails, export CSV, and generate AI outreach.
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_auto]">
@@ -293,10 +336,7 @@ export default function Dashboard() {
             <input
               value={newLead.company}
               onChange={(e) =>
-                setNewLead((current) => ({
-                  ...current,
-                  company: e.target.value,
-                }))
+                setNewLead((current) => ({ ...current, company: e.target.value }))
               }
               className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
               placeholder="Company name"
@@ -304,10 +344,7 @@ export default function Dashboard() {
             <input
               value={newLead.website}
               onChange={(e) =>
-                setNewLead((current) => ({
-                  ...current,
-                  website: e.target.value,
-                }))
+                setNewLead((current) => ({ ...current, website: e.target.value }))
               }
               className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
               placeholder="Website"
@@ -315,10 +352,7 @@ export default function Dashboard() {
             <input
               value={newLead.email}
               onChange={(e) =>
-                setNewLead((current) => ({
-                  ...current,
-                  email: e.target.value,
-                }))
+                setNewLead((current) => ({ ...current, email: e.target.value }))
               }
               className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
               placeholder="Email"
@@ -326,10 +360,7 @@ export default function Dashboard() {
             <input
               value={newLead.phone}
               onChange={(e) =>
-                setNewLead((current) => ({
-                  ...current,
-                  phone: e.target.value,
-                }))
+                setNewLead((current) => ({ ...current, phone: e.target.value }))
               }
               className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
               placeholder="Phone"
@@ -365,17 +396,26 @@ export default function Dashboard() {
             <div>
               <h2 className="text-2xl font-black">Lead results</h2>
               <p className="mt-2 text-slate-400">
-                Select leads, export CSV, or generate AI outreach.
+                Select leads, find emails, export CSV, or generate AI outreach.
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={findEmails}
+                disabled={loadingEmails || selectedLeads.length === 0}
+                className={`${buttonBase} rounded-full border border-cyan-300/40 bg-cyan-300/10 px-5 py-3 font-bold text-cyan-100 hover:bg-cyan-300 hover:text-black disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                {loadingEmails ? "Finding Emails..." : "Find Emails"}
+              </button>
+
               <button
                 onClick={exportCSV}
                 className={`${buttonBase} rounded-full border border-white/15 px-5 py-3 font-bold hover:bg-white hover:text-black`}
               >
                 Export CSV
               </button>
+
               <button
                 onClick={generateOutreach}
                 disabled={loadingOutreach}
