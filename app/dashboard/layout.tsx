@@ -34,14 +34,14 @@ export default function DashboardLayout({
           <div className="mt-8 flex flex-col gap-3">
             <a
               href="/sign-in"
-              className="rounded-full bg-cyan-300 px-6 py-4 font-black text-black transition hover:bg-cyan-200"
+              className="cursor-pointer rounded-full bg-cyan-300 px-6 py-4 font-black text-black transition-all duration-200 hover:-translate-y-0.5 hover:bg-cyan-200 hover:shadow-[0_0_35px_rgba(103,232,249,0.35)]"
             >
               Sign In
             </a>
 
             <a
               href="/sign-up"
-              className="rounded-full border border-white/15 px-6 py-4 font-bold transition hover:bg-white hover:text-black"
+              className="cursor-pointer rounded-full border border-white/15 px-6 py-4 font-bold transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-black"
             >
               Create Account
             </a>
