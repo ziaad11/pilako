@@ -12,6 +12,14 @@ type Lead = {
   score: string;
 };
 
+type BulkEmail = {
+  leadId: number;
+  company: string;
+  email: string;
+  subject: string;
+  message: string;
+};
+
 const demoLeads: Lead[] = [
   {
     id: 1,
@@ -47,10 +55,14 @@ export default function Dashboard() {
   const [location, setLocation] = useState("Dubai");
   const [leads, setLeads] = useState<Lead[]>(demoLeads);
   const [selectedIds, setSelectedIds] = useState<number[]>([1, 2, 3]);
+
   const [copied, setCopied] = useState("");
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingEmails, setLoadingEmails] = useState(false);
   const [loadingOutreach, setLoadingOutreach] = useState(false);
+  const [loadingBulk, setLoadingBulk] = useState(false);
+
+  const [bulkEmails, setBulkEmails] = useState<BulkEmail[]>([]);
 
   const [newLead, setNewLead] = useState({
     company: "",
@@ -99,10 +111,7 @@ export default function Dashboard() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          niche,
-          location,
-        }),
+        body: JSON.stringify({ niche, location }),
       });
 
       const data = await response.json();
@@ -116,6 +125,7 @@ export default function Dashboard() {
       setLeads(newLeads);
       setSelectedIds(newLeads.map((lead) => lead.id));
       setOutreach({ cold: "", follow1: "", follow2: "" });
+      setBulkEmails([]);
     } catch (error) {
       console.error(error);
       alert("Failed to fetch real leads. Please check SERPAPI_API_KEY.");
@@ -133,9 +143,7 @@ export default function Dashboard() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          leads: selectedLeads,
-        }),
+        body: JSON.stringify({ leads: selectedLeads }),
       });
 
       const data = await response.json();
@@ -195,6 +203,29 @@ export default function Dashboard() {
     );
   }
 
+  function makeCSV(headers: string[], rows: string[][]) {
+    return [headers, ...rows]
+      .map((row) =>
+        row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")
+      )
+      .join("\n");
+  }
+
+  function downloadCSV(filename: string, csvContent: string) {
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
   function exportCSV() {
     const headers = ["Company", "Website", "Email", "Phone", "Location", "Score"];
 
@@ -207,24 +238,20 @@ export default function Dashboard() {
       lead.score,
     ]);
 
-    const csvContent = [headers, ...rows]
-      .map((row) =>
-        row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")
-      )
-      .join("\n");
+    downloadCSV("pilako-leads.csv", makeCSV(headers, rows));
+  }
 
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
+  function exportBulkCSV() {
+    const headers = ["Company", "Email", "Subject", "Message"];
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const rows = bulkEmails.map((item) => [
+      item.company,
+      item.email,
+      item.subject,
+      item.message,
+    ]);
 
-    link.href = url;
-    link.download = "pilako-leads.csv";
-    link.click();
-
-    URL.revokeObjectURL(url);
+    downloadCSV("pilako-outreach.csv", makeCSV(headers, rows));
   }
 
   async function generateOutreach() {
@@ -266,6 +293,38 @@ export default function Dashboard() {
       });
     } finally {
       setLoadingOutreach(false);
+    }
+  }
+
+  async function generateBulkOutreach() {
+    try {
+      setLoadingBulk(true);
+      setBulkEmails([]);
+
+      const response = await fetch("/api/bulk-outreach", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          niche,
+          location,
+          leads: selectedLeads,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate bulk outreach");
+      }
+
+      setBulkEmails(data.emails || []);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to generate bulk outreach. Please try again.");
+    } finally {
+      setLoadingBulk(false);
     }
   }
 
@@ -396,7 +455,7 @@ export default function Dashboard() {
             <div>
               <h2 className="text-2xl font-black">Lead results</h2>
               <p className="mt-2 text-slate-400">
-                Select leads, find emails, export CSV, or generate AI outreach.
+                Select leads, find emails, export CSV, or generate outreach.
               </p>
             </div>
 
@@ -411,17 +470,26 @@ export default function Dashboard() {
 
               <button
                 onClick={exportCSV}
-                className={`${buttonBase} rounded-full border border-white/15 px-5 py-3 font-bold hover:bg-white hover:text-black`}
+                disabled={selectedLeads.length === 0}
+                className={`${buttonBase} rounded-full border border-white/15 px-5 py-3 font-bold hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-60`}
               >
-                Export CSV
+                Export Leads CSV
               </button>
 
               <button
                 onClick={generateOutreach}
-                disabled={loadingOutreach}
+                disabled={loadingOutreach || selectedLeads.length === 0}
                 className={`${buttonBase} rounded-full bg-white px-5 py-3 font-black text-black hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {loadingOutreach ? "Generating..." : "Generate AI Outreach"}
+              </button>
+
+              <button
+                onClick={generateBulkOutreach}
+                disabled={loadingBulk || selectedLeads.length === 0}
+                className={`${buttonBase} rounded-full bg-cyan-300 px-5 py-3 font-black text-black hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                {loadingBulk ? "Generating Bulk..." : "Generate Bulk Outreach"}
               </button>
             </div>
           </div>
@@ -469,6 +537,61 @@ export default function Dashboard() {
                         <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-sm font-bold text-cyan-200">
                           {lead.score}
                         </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[2rem] border border-cyan-300/20 bg-cyan-300/[0.06] p-6">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <h2 className="text-2xl font-black">Bulk outreach</h2>
+              <p className="mt-2 text-slate-300">
+                Generate personalized emails for selected leads and export them as CSV.
+              </p>
+            </div>
+
+            <button
+              onClick={exportBulkCSV}
+              disabled={bulkEmails.length === 0}
+              className={`${buttonBase} rounded-full bg-white px-5 py-3 font-black text-black hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              Export Outreach CSV
+            </button>
+          </div>
+
+          <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full min-w-[1000px] border-collapse text-left">
+              <thead className="bg-white/[0.06] text-sm text-slate-300">
+                <tr>
+                  <th className="px-5 py-4">Company</th>
+                  <th className="px-5 py-4">Email</th>
+                  <th className="px-5 py-4">Subject</th>
+                  <th className="px-5 py-4">Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bulkEmails.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-10 text-center text-slate-400">
+                      Click “Generate Bulk Outreach” to create personalized messages.
+                    </td>
+                  </tr>
+                ) : (
+                  bulkEmails.map((item) => (
+                    <tr
+                      key={`${item.leadId}-${item.company}`}
+                      className="border-t border-white/10 align-top"
+                    >
+                      <td className="px-5 py-4 font-bold">{item.company}</td>
+                      <td className="px-5 py-4 text-cyan-300">{item.email}</td>
+                      <td className="px-5 py-4 text-slate-200">{item.subject}</td>
+                      <td className="px-5 py-4 text-sm leading-6 text-slate-300">
+                        {item.message}
                       </td>
                     </tr>
                   ))
