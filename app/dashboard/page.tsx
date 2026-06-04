@@ -61,6 +61,7 @@ export default function Dashboard() {
   const [loadingEmails, setLoadingEmails] = useState(false);
   const [loadingOutreach, setLoadingOutreach] = useState(false);
   const [loadingBulk, setLoadingBulk] = useState(false);
+  const [savingCampaign, setSavingCampaign] = useState(false);
 
   const [bulkEmails, setBulkEmails] = useState<BulkEmail[]>([]);
 
@@ -252,6 +253,39 @@ export default function Dashboard() {
     ]);
 
     downloadCSV("pilako-outreach.csv", makeCSV(headers, rows));
+  }
+
+  async function saveCampaign() {
+    try {
+      setSavingCampaign(true);
+
+      const response = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: `${niche} - ${location}`,
+          niche,
+          location,
+          leads_count: leads.length,
+          emails_count: stats.emails,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save campaign");
+      }
+
+      alert("Campaign saved successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to save campaign.");
+    } finally {
+      setSavingCampaign(false);
+    }
   }
 
   async function generateOutreach() {
@@ -490,6 +524,14 @@ export default function Dashboard() {
                 className={`${buttonBase} rounded-full bg-cyan-300 px-5 py-3 font-black text-black hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {loadingBulk ? "Generating Bulk..." : "Generate Bulk Outreach"}
+              </button>
+
+              <button
+                onClick={saveCampaign}
+                disabled={savingCampaign || leads.length === 0}
+                className={`${buttonBase} rounded-full border border-green-400/40 bg-green-400/10 px-5 py-3 font-bold text-green-200 hover:bg-green-400 hover:text-black disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                {savingCampaign ? "Saving..." : "Save Campaign"}
               </button>
             </div>
           </div>
