@@ -1,6 +1,6 @@
 "use client";
 
-import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 
 export default function DashboardLayout({
   children,
@@ -32,17 +32,19 @@ export default function DashboardLayout({
           </p>
 
           <div className="mt-8 flex flex-col gap-3">
-            <SignInButton mode="modal">
-              <button className="rounded-full bg-cyan-300 px-6 py-4 font-black text-black">
-                Sign In
-              </button>
-            </SignInButton>
+            <a
+              href="/sign-in"
+              className="rounded-full bg-cyan-300 px-6 py-4 font-black text-black transition hover:bg-cyan-200"
+            >
+              Sign In
+            </a>
 
-            <SignUpButton mode="modal">
-              <button className="rounded-full border border-white/15 px-6 py-4 font-bold">
-                Create Account
-              </button>
-            </SignUpButton>
+            <a
+              href="/sign-up"
+              className="rounded-full border border-white/15 px-6 py-4 font-bold transition hover:bg-white hover:text-black"
+            >
+              Create Account
+            </a>
           </div>
         </div>
       </main>
