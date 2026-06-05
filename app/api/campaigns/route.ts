@@ -32,6 +32,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing user_id" }, { status: 400 });
     }
 
+    const { data: existingCampaign } = await supabase
+      .from("campaigns")
+      .select("*")
+      .eq("user_id", user_id)
+      .eq("name", name)
+      .maybeSingle();
+
+    if (existingCampaign) {
+      return NextResponse.json(
+        { error: "Campaign already exists" },
+        { status: 409 }
+      );
+    }
+
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
       .insert({
