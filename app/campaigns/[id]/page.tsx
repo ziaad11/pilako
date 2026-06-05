@@ -31,6 +31,7 @@ export default function CampaignDetailsPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   async function loadCampaignDetails() {
     try {
@@ -50,6 +51,33 @@ export default function CampaignDetailsPage() {
       alert("Failed to load campaign details.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function deleteCampaign() {
+    const confirmed = confirm("Are you sure you want to delete this campaign?");
+
+    if (!confirmed) return;
+
+    try {
+      setDeleting(true);
+
+      const response = await fetch(`/api/campaigns?campaign_id=${campaignId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Delete failed");
+      }
+
+      window.location.href = "/campaigns";
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete campaign.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -114,7 +142,7 @@ export default function CampaignDetailsPage() {
   return (
     <main className="min-h-screen bg-[#020617] px-6 py-8 text-white">
       <div className="mx-auto max-w-7xl">
-        <nav className="flex items-center justify-between">
+        <nav className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
               Pilako
@@ -122,12 +150,22 @@ export default function CampaignDetailsPage() {
             <h1 className="mt-2 text-3xl font-black">{campaign.name}</h1>
           </div>
 
-          <a
-            href="/campaigns"
-            className="rounded-full border border-white/15 bg-white/10 px-5 py-2 text-sm font-bold transition hover:bg-white hover:text-black"
-          >
-            Back to Campaigns
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={deleteCampaign}
+              disabled={deleting}
+              className="cursor-pointer rounded-full bg-red-500 px-5 py-2 text-sm font-bold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {deleting ? "Deleting..." : "Delete Campaign"}
+            </button>
+
+            <a
+              href="/campaigns"
+              className="rounded-full border border-white/15 bg-white/10 px-5 py-2 text-sm font-bold transition hover:bg-white hover:text-black"
+            >
+              Back to Campaigns
+            </a>
+          </div>
         </nav>
 
         <section className="mt-10 grid gap-6 md:grid-cols-4">

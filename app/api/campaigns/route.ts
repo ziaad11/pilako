@@ -26,15 +26,7 @@ export async function POST(req: Request) {
     const supabase = getSupabase();
     const body = await req.json();
 
-    const {
-      user_id,
-      name,
-      niche,
-      location,
-      leads_count,
-      emails_count,
-      leads,
-    } = body;
+    const { user_id, name, niche, location, leads_count, emails_count, leads } = body;
 
     if (!user_id) {
       return NextResponse.json({ error: "Missing user_id" }, { status: 400 });
@@ -54,10 +46,7 @@ export async function POST(req: Request) {
       .single();
 
     if (campaignError) {
-      return NextResponse.json(
-        { error: campaignError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: campaignError.message }, { status: 500 });
     }
 
     if (Array.isArray(leads) && leads.length > 0) {
@@ -71,15 +60,10 @@ export async function POST(req: Request) {
         score: lead.score,
       }));
 
-      const { error: leadsError } = await supabase
-        .from("leads")
-        .insert(leadsToInsert);
+      const { error: leadsError } = await supabase.from("leads").insert(leadsToInsert);
 
       if (leadsError) {
-        return NextResponse.json(
-          { error: leadsError.message },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: leadsError.message }, { status: 500 });
       }
     }
 
@@ -108,10 +92,7 @@ export async function GET(req: Request) {
         .single();
 
       if (campaignError) {
-        return NextResponse.json(
-          { error: campaignError.message },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: campaignError.message }, { status: 500 });
       }
 
       const { data: leads, error: leadsError } = await supabase
@@ -121,10 +102,7 @@ export async function GET(req: Request) {
         .order("created_at", { ascending: false });
 
       if (leadsError) {
-        return NextResponse.json(
-          { error: leadsError.message },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: leadsError.message }, { status: 500 });
       }
 
       return NextResponse.json({
@@ -148,6 +126,44 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ campaigns: data || [] });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const supabase = getSupabase();
+    const { searchParams } = new URL(req.url);
+
+    const campaign_id = searchParams.get("campaign_id");
+
+    if (!campaign_id) {
+      return NextResponse.json({ error: "Missing campaign_id" }, { status: 400 });
+    }
+
+    const { error: leadsError } = await supabase
+      .from("leads")
+      .delete()
+      .eq("campaign_id", campaign_id);
+
+    if (leadsError) {
+      return NextResponse.json({ error: leadsError.message }, { status: 500 });
+    }
+
+    const { error: campaignError } = await supabase
+      .from("campaigns")
+      .delete()
+      .eq("id", campaign_id);
+
+    if (campaignError) {
+      return NextResponse.json({ error: campaignError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown server error" },
