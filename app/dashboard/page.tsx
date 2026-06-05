@@ -285,8 +285,13 @@ export default function Dashboard() {
 
       const data = await response.json();
 
+      if (response.status === 409) {
+        alert("Campaign already exists.");
+        return;
+      }
+
       if (!response.ok) {
-        if (response.status === 409) { alert("Campaign already exists."); return; }`r`n      throw new Error(data.error || "Failed to save campaign");
+        throw new Error(data.error || "Failed to save campaign");
       }
 
       alert("Campaign saved successfully!");
@@ -297,7 +302,6 @@ export default function Dashboard() {
       setSavingCampaign(false);
     }
   }
-
   async function generateOutreach() {
     try {
       setLoadingOutreach(true);
@@ -693,5 +697,6 @@ export default function Dashboard() {
     </main>
   );
 }
+
 
 
