@@ -278,7 +278,7 @@ export default function Dashboard() {
           niche,
           location,
           leads_count: leads.length,
-          emails_count: stats.emails,
+          emails_count: stats.emails,`r`n          leads: leads,
           leads: leads,
         }),
       });
@@ -697,6 +697,7 @@ export default function Dashboard() {
     </main>
   );
 }
+
 
 
 
