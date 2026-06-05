@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
@@ -20,6 +20,7 @@ export default function CampaignsPage() {
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   async function loadCampaigns() {
     if (!user?.id) return;
@@ -47,6 +48,18 @@ export default function CampaignsPage() {
     loadCampaigns();
   }, [user?.id]);
 
+  const filteredCampaigns = useMemo(() => {
+    const q = search.toLowerCase().trim();
+
+    if (!q) return campaigns;
+
+    return campaigns.filter((campaign) =>
+      `${campaign.name} ${campaign.niche} ${campaign.location}`
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [campaigns, search]);
+
   return (
     <main className="min-h-screen bg-[#020617] px-6 py-8 text-white">
       <div className="mx-auto max-w-7xl">
@@ -67,10 +80,21 @@ export default function CampaignsPage() {
         </nav>
 
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-          <h2 className="text-2xl font-black">Saved campaigns</h2>
-          <p className="mt-2 text-slate-400">
-            Click any campaign to open its saved leads.
-          </p>
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <h2 className="text-2xl font-black">Saved campaigns</h2>
+              <p className="mt-2 text-slate-400">
+                Search and open your saved campaigns.
+              </p>
+            </div>
+
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search campaigns..."
+              className="w-full rounded-full border border-white/10 bg-black/30 px-5 py-3 outline-none placeholder:text-slate-500 focus:border-cyan-300/60 md:w-80"
+            />
+          </div>
 
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
             <table className="w-full min-w-[800px] border-collapse text-left">
@@ -92,34 +116,24 @@ export default function CampaignsPage() {
                       Loading campaigns...
                     </td>
                   </tr>
-                ) : campaigns.length === 0 ? (
+                ) : filteredCampaigns.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-5 py-10 text-center text-slate-400">
-                      No campaigns saved yet.
+                      No campaigns found.
                     </td>
                   </tr>
                 ) : (
-                  campaigns.map((campaign) => (
+                  filteredCampaigns.map((campaign) => (
                     <tr
                       key={campaign.id}
                       onClick={() => router.push(`/campaigns/${campaign.id}`)}
                       className="cursor-pointer border-t border-white/10 transition hover:bg-cyan-300/10"
                     >
-                      <td className="px-5 py-4 font-bold">
-                        {campaign.name}
-                      </td>
-                      <td className="px-5 py-4 text-slate-300">
-                        {campaign.niche}
-                      </td>
-                      <td className="px-5 py-4 text-slate-300">
-                        {campaign.location}
-                      </td>
-                      <td className="px-5 py-4 text-cyan-300">
-                        {campaign.leads_count}
-                      </td>
-                      <td className="px-5 py-4 text-cyan-300">
-                        {campaign.emails_count}
-                      </td>
+                      <td className="px-5 py-4 font-bold">{campaign.name}</td>
+                      <td className="px-5 py-4 text-slate-300">{campaign.niche}</td>
+                      <td className="px-5 py-4 text-slate-300">{campaign.location}</td>
+                      <td className="px-5 py-4 text-cyan-300">{campaign.leads_count}</td>
+                      <td className="px-5 py-4 text-cyan-300">{campaign.emails_count}</td>
                       <td className="px-5 py-4 text-slate-400">
                         {new Date(campaign.created_at).toLocaleDateString()}
                       </td>
