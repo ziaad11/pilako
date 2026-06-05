@@ -279,6 +279,7 @@ export default function Dashboard() {
           location,
           leads_count: leads.length,
           emails_count: stats.emails,
+          leads: leads,
         }),
       });
 
