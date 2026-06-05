@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import AnalyticsPanel from "./AnalyticsPanel";
+import ChartsPanel from "./ChartsPanel";
 
 type Lead = {
   id: number;
@@ -456,26 +457,7 @@ export default function Dashboard() {
 
         <AnalyticsPanel />
 
-        <section className="mt-8 grid gap-6 md:grid-cols-4">
-          {[
-            ["Total Campaigns", campaignStats.totalCampaigns, "from saved campaigns", "cyan"],
-            ["Total Leads", campaignStats.totalLeads, "saved in database", "green"],
-            ["Emails Found", campaignStats.totalEmails, "available contacts", "purple"],
-            ["Conversion Rate", `${campaignStats.conversionRate}%`, "emails / leads", "yellow"],
-          ].map(([label, value, sub, color]) => (
-            <div
-              key={label}
-              className={`relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.045] p-6 shadow-2xl transition hover:-translate-y-1 hover:bg-white/[0.07]`}
-            >
-              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-cyan-300/10 blur-2xl" />
-              <p className="text-sm text-slate-400">{label}</p>
-              <h2 className="mt-3 text-4xl font-black">{value}</h2>
-              <p className="mt-2 text-xs uppercase tracking-[0.2em] text-cyan-300">
-                {sub}
-              </p>
-            </div>
-          ))}
-        </section>
+
 
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Find real leads</h2>
