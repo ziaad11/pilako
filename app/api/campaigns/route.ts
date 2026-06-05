@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Missing Supabase environment variables");
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey);
+}
+
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
@@ -10,21 +21,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json(
-        { error: "Supabase variables missing" },
-        { status: 500 }
-      );
-    }
-
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseAnonKey
-    );
-
+    const supabase = getSupabase();
     const body = await req.json();
 
     const { name, niche, location, leads_count, emails_count } = body;
@@ -43,18 +40,16 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      console.error(error);
       return NextResponse.json(
-        { error: "Failed to save campaign" },
+        { error: error.message },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ campaign: data });
   } catch (error) {
-    console.error(error);
     return NextResponse.json(
-      { error: "Server error" },
+      { error: error instanceof Error ? error.message : "Unknown server error" },
       { status: 500 }
     );
   }
@@ -68,20 +63,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json(
-        { error: "Supabase variables missing" },
-        { status: 500 }
-      );
-    }
-
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseAnonKey
-    );
+    const supabase = getSupabase();
 
     const { data, error } = await supabase
       .from("campaigns")
@@ -90,18 +72,16 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error(error);
       return NextResponse.json(
-        { error: "Failed to fetch campaigns" },
+        { error: error.message },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ campaigns: data || [] });
   } catch (error) {
-    console.error(error);
     return NextResponse.json(
-      { error: "Server error" },
+      { error: error instanceof Error ? error.message : "Unknown server error" },
       { status: 500 }
     );
   }
