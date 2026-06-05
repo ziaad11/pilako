@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 
 function getSupabase() {
@@ -15,21 +14,19 @@ function getSupabase() {
 
 export async function POST(req: Request) {
   try {
-    const user = await currentUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const supabase = getSupabase();
     const body = await req.json();
 
-    const { name, niche, location, leads_count, emails_count } = body;
+    const { user_id, name, niche, location, leads_count, emails_count } = body;
+
+    if (!user_id) {
+      return NextResponse.json({ error: "Missing user_id" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("campaigns")
       .insert({
-        user_id: user.id,
+        user_id,
         name,
         niche,
         location,
@@ -52,20 +49,20 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const user = await currentUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const supabase = getSupabase();
+    const { searchParams } = new URL(req.url);
+    const user_id = searchParams.get("user_id");
+
+    if (!user_id) {
+      return NextResponse.json({ error: "Missing user_id" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("campaigns")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", user_id)
       .order("created_at", { ascending: false });
 
     if (error) {
