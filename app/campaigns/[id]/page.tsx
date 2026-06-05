@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
 type Campaign = {
@@ -32,6 +32,8 @@ export default function CampaignDetailsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("company");
 
   async function loadCampaignDetails() {
     try {
@@ -81,6 +83,37 @@ export default function CampaignDetailsPage() {
     }
   }
 
+  const filteredLeads = useMemo(() => {
+    const query = search.toLowerCase().trim();
+
+    let result = leads.filter((lead) =>
+      `${lead.company} ${lead.website} ${lead.email} ${lead.phone} ${lead.location}`
+        .toLowerCase()
+        .includes(query)
+    );
+
+    if (sortBy === "company") {
+      result = [...result].sort((a, b) => a.company.localeCompare(b.company));
+    }
+
+    if (sortBy === "email") {
+      result = [...result].sort((a, b) => a.email.localeCompare(b.email));
+    }
+
+    if (sortBy === "location") {
+      result = [...result].sort((a, b) => a.location.localeCompare(b.location));
+    }
+
+    return result;
+  }, [leads, search, sortBy]);
+
+  const emailCount = leads.filter(
+    (lead) =>
+      lead.email &&
+      lead.email !== "Not found" &&
+      lead.email !== "Not provided"
+  ).length;
+
   function makeCSV(headers: string[], rows: string[][]) {
     return [headers, ...rows]
       .map((row) =>
@@ -107,7 +140,7 @@ export default function CampaignDetailsPage() {
   function exportLeadsCSV() {
     const headers = ["Company", "Website", "Email", "Phone", "Location", "Score"];
 
-    const rows = leads.map((lead) => [
+    const rows = filteredLeads.map((lead) => [
       lead.company,
       lead.website,
       lead.email,
@@ -141,75 +174,116 @@ export default function CampaignDetailsPage() {
 
   return (
     <main className="min-h-screen bg-[#020617] px-6 py-8 text-white">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-[1500px]">
         <nav className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
               Pilako
             </p>
-            <h1 className="mt-2 text-3xl font-black">{campaign.name}</h1>
+            <h1 className="mt-2 text-4xl font-black">{campaign.name}</h1>
+            <p className="mt-2 text-slate-400">
+              Campaign intelligence, saved leads, and export-ready contacts.
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <button
               onClick={deleteCampaign}
               disabled={deleting}
-              className="cursor-pointer rounded-full bg-red-500 px-5 py-2 text-sm font-bold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-full bg-red-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {deleting ? "Deleting..." : "Delete Campaign"}
             </button>
 
             <a
               href="/campaigns"
-              className="rounded-full border border-white/15 bg-white/10 px-5 py-2 text-sm font-bold transition hover:bg-white hover:text-black"
+              className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white hover:text-black"
             >
               Back to Campaigns
             </a>
           </div>
         </nav>
 
-        <section className="mt-10 grid gap-6 md:grid-cols-4">
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-6">
-            <p className="text-sm text-slate-400">Niche</p>
-            <p className="mt-2 text-2xl font-black">{campaign.niche}</p>
-          </div>
+        <section className="mt-10 rounded-[2.5rem] border border-cyan-300/20 bg-gradient-to-br from-cyan-300/10 via-white/[0.04] to-fuchsia-500/10 p-6 shadow-[0_0_80px_rgba(34,211,238,0.10)]">
+          <div className="grid gap-5 md:grid-cols-4">
+            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-6">
+              <p className="text-sm text-slate-400">Niche</p>
+              <h3 className="mt-3 text-3xl font-black">{campaign.niche}</h3>
+            </div>
 
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-6">
-            <p className="text-sm text-slate-400">Location</p>
-            <p className="mt-2 text-2xl font-black">{campaign.location}</p>
-          </div>
+            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-6">
+              <p className="text-sm text-slate-400">Location</p>
+              <h3 className="mt-3 text-3xl font-black">{campaign.location}</h3>
+            </div>
 
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-6">
-            <p className="text-sm text-slate-400">Leads</p>
-            <p className="mt-2 text-2xl font-black">{leads.length}</p>
-          </div>
+            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-6">
+              <p className="text-sm text-slate-400">Saved Leads</p>
+              <h3 className="mt-3 text-3xl font-black">{leads.length}</h3>
+            </div>
 
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-6">
-            <p className="text-sm text-slate-400">Emails</p>
-            <p className="mt-2 text-2xl font-black">{campaign.emails_count}</p>
+            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-6">
+              <p className="text-sm text-slate-400">Emails Found</p>
+              <h3 className="mt-3 text-3xl font-black">{emailCount}</h3>
+            </div>
           </div>
         </section>
 
-        <section className="mt-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <section className="mt-8 rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-6">
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
-              <h2 className="text-2xl font-black">Saved Leads</h2>
+              <h2 className="text-3xl font-black">Saved Leads</h2>
               <p className="mt-2 text-slate-400">
-                All leads saved inside this campaign.
+                Search, sort, and export all saved contacts inside this campaign.
               </p>
             </div>
 
-            <button
-              onClick={exportLeadsCSV}
-              disabled={leads.length === 0}
-              className="cursor-pointer rounded-full bg-cyan-300 px-5 py-3 font-black text-black transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Export CSV
-            </button>
+            <div className="grid w-full gap-3 md:grid-cols-[1fr_auto_auto] lg:w-[860px]">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search company, website, email, phone, location..."
+                className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
+              />
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none focus:border-cyan-300/60"
+              >
+                <option value="company">Company</option>
+                <option value="email">Email</option>
+                <option value="location">Location</option>
+              </select>
+
+              <button
+                onClick={exportLeadsCSV}
+                disabled={filteredLeads.length === 0}
+                className="cursor-pointer rounded-2xl bg-cyan-300 px-6 py-4 font-black text-black transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-5 md:grid-cols-3">
+            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-5">
+              <p className="text-sm text-slate-400">Visible Leads</p>
+              <h3 className="mt-2 text-4xl font-black">{filteredLeads.length}</h3>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-5">
+              <p className="text-sm text-slate-400">Total Leads</p>
+              <h3 className="mt-2 text-4xl font-black">{leads.length}</h3>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-5">
+              <p className="text-sm text-slate-400">Emails Found</p>
+              <h3 className="mt-2 text-4xl font-black">{emailCount}</h3>
+            </div>
           </div>
 
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[1000px] border-collapse text-left">
+            <table className="w-full min-w-[1050px] border-collapse text-left">
               <thead className="bg-white/[0.06] text-sm text-slate-300">
                 <tr>
                   <th className="px-5 py-4">Company</th>
@@ -222,24 +296,24 @@ export default function CampaignDetailsPage() {
               </thead>
 
               <tbody>
-                {leads.length === 0 ? (
+                {filteredLeads.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-slate-400">
-                      No leads saved for this campaign.
+                    <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
+                      No leads found.
                     </td>
                   </tr>
                 ) : (
-                  leads.map((lead) => (
+                  filteredLeads.map((lead) => (
                     <tr
                       key={lead.id}
-                      className="border-t border-white/10 transition hover:bg-white/[0.04]"
+                      className="border-t border-white/10 transition hover:bg-cyan-300/10"
                     >
-                      <td className="px-5 py-4 font-bold">{lead.company}</td>
-                      <td className="px-5 py-4 text-cyan-300">{lead.website}</td>
-                      <td className="px-5 py-4 text-slate-300">{lead.email}</td>
-                      <td className="px-5 py-4 text-slate-300">{lead.phone}</td>
-                      <td className="px-5 py-4 text-slate-300">{lead.location}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-5 font-black">{lead.company}</td>
+                      <td className="px-5 py-5 text-cyan-300">{lead.website}</td>
+                      <td className="px-5 py-5 text-slate-300">{lead.email}</td>
+                      <td className="px-5 py-5 text-slate-300">{lead.phone}</td>
+                      <td className="px-5 py-5 text-slate-300">{lead.location}</td>
+                      <td className="px-5 py-5">
                         <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-sm font-bold text-cyan-200">
                           {lead.score}
                         </span>
