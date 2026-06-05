@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 
 type Campaign = {
   id: number;
@@ -13,14 +14,17 @@ type Campaign = {
 };
 
 export default function CampaignsPage() {
+  const { user } = useUser();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function loadCampaigns() {
+    if (!user?.id) return;
+
     try {
       setLoading(true);
 
-      const response = await fetch("/api/campaigns");
+      const response = await fetch(`/api/campaigns?user_id=${user.id}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -38,7 +42,7 @@ export default function CampaignsPage() {
 
   useEffect(() => {
     loadCampaigns();
-  }, []);
+  }, [user?.id]);
 
   return (
     <main className="min-h-screen bg-[#020617] px-6 py-8 text-white">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 
 type Lead = {
   id: number;
@@ -51,6 +52,8 @@ const demoLeads: Lead[] = [
 ];
 
 export default function Dashboard() {
+  const { user } = useUser();
+
   const [niche, setNiche] = useState("law firms");
   const [location, setLocation] = useState("Dubai");
   const [leads, setLeads] = useState<Lead[]>(demoLeads);
@@ -257,6 +260,11 @@ export default function Dashboard() {
 
   async function saveCampaign() {
     try {
+      if (!user?.id) {
+        alert("Please sign in first.");
+        return;
+      }
+
       setSavingCampaign(true);
 
       const response = await fetch("/api/campaigns", {
@@ -265,6 +273,7 @@ export default function Dashboard() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          user_id: user.id,
           name: `${niche} - ${location}`,
           niche,
           location,
@@ -382,12 +391,21 @@ export default function Dashboard() {
             <h1 className="mt-2 text-3xl font-black">AI Sales Employee</h1>
           </div>
 
-          <a
-            href="/"
-            className={`${buttonBase} rounded-full border border-white/15 bg-white/10 px-5 py-2 text-sm font-bold hover:bg-white hover:text-black`}
-          >
-            Back Home
-          </a>
+          <div className="flex gap-3">
+            <a
+              href="/campaigns"
+              className={`${buttonBase} rounded-full border border-cyan-300/30 bg-cyan-300/10 px-5 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-300 hover:text-black`}
+            >
+              My Campaigns
+            </a>
+
+            <a
+              href="/"
+              className={`${buttonBase} rounded-full border border-white/15 bg-white/10 px-5 py-2 text-sm font-bold hover:bg-white hover:text-black`}
+            >
+              Back Home
+            </a>
+          </div>
         </nav>
 
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
