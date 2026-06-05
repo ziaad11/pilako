@@ -428,7 +428,7 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen bg-[#020617] text-white">
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className="mx-auto max-w-[1600px] px-6 py-8">
         <nav className="flex items-center justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
@@ -453,6 +453,8 @@ export default function Dashboard() {
             </a>
           </div>
         </nav>
+
+        <AnalyticsPanel />
 
         <section className="mt-8 grid gap-6 md:grid-cols-4">
           {[
@@ -759,5 +761,7 @@ export default function Dashboard() {
     </main>
   );
 }
+
+
 
 

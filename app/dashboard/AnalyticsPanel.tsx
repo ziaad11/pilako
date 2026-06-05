@@ -86,32 +86,57 @@ export default function AnalyticsPanel() {
   );
 
   return (
-    <section className="mt-8 space-y-6">
-      <div className="grid gap-6 md:grid-cols-4">
-        {[
-          ["Total Campaigns", stats.totalCampaigns, "Saved campaigns"],
-          ["Total Leads", stats.totalLeads, "Database leads"],
-          ["Emails Found", stats.totalEmails, "Available contacts"],
-          ["Conversion Rate", `${stats.conversionRate}%`, "Emails / leads"],
-        ].map(([label, value, sub]) => (
-          <div
-            key={label}
-            className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.05] p-6 shadow-2xl transition hover:-translate-y-1 hover:bg-white/[0.08]"
-          >
-            <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-cyan-300/10 blur-2xl" />
-            <p className="text-sm text-slate-400">{label}</p>
-            <h2 className="mt-3 text-4xl font-black">{value}</h2>
-            <p className="mt-2 text-xs uppercase tracking-[0.2em] text-cyan-300">
-              {sub}
+    <section className="mt-8 space-y-8">
+      <div className="rounded-[2.5rem] border border-cyan-300/20 bg-gradient-to-br from-cyan-300/10 via-white/[0.04] to-fuchsia-500/10 p-6 shadow-[0_0_80px_rgba(34,211,238,0.12)]">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <p className="text-sm uppercase tracking-[0.35em] text-cyan-300">
+              Analytics
+            </p>
+            <h2 className="mt-3 text-4xl font-black">
+              Sales intelligence overview
+            </h2>
+            <p className="mt-3 max-w-2xl text-slate-400">
+              Track saved campaigns, leads, emails, locations, niches, and recent activity.
             </p>
           </div>
-        ))}
+
+          <a
+            href="/campaigns"
+            className="rounded-full bg-cyan-300 px-6 py-3 font-black text-black transition hover:bg-cyan-200"
+          >
+            View Campaigns
+          </a>
+        </div>
+
+        <div className="mt-8 grid gap-5 md:grid-cols-4">
+          {[
+            ["Total Campaigns", stats.totalCampaigns, "Saved campaigns"],
+            ["Total Leads", stats.totalLeads, "Database leads"],
+            ["Emails Found", stats.totalEmails, "Available contacts"],
+            ["Conversion Rate", `${stats.conversionRate}%`, "Emails / leads"],
+          ].map(([label, value, sub]) => (
+            <div
+              key={label}
+              className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black/30 p-6 transition hover:-translate-y-1 hover:border-cyan-300/40"
+            >
+              <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl" />
+              <p className="text-sm text-slate-400">{label}</p>
+              <h3 className="mt-4 text-5xl font-black">{value}</h3>
+              <p className="mt-3 text-xs uppercase tracking-[0.22em] text-cyan-300">
+                {sub}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Top Locations</h2>
-          <p className="mt-2 text-sm text-slate-400">Best markets by saved leads.</p>
+          <p className="mt-2 text-sm text-slate-400">
+            Best markets by saved leads.
+          </p>
 
           <div className="mt-6 space-y-5">
             {stats.topLocations.length === 0 ? (
@@ -142,7 +167,9 @@ export default function AnalyticsPanel() {
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Top Niches</h2>
-          <p className="mt-2 text-sm text-slate-400">Most active lead categories.</p>
+          <p className="mt-2 text-sm text-slate-400">
+            Most active lead categories.
+          </p>
 
           <div className="mt-6 space-y-5">
             {stats.topNiches.length === 0 ? (
@@ -173,7 +200,9 @@ export default function AnalyticsPanel() {
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Recent Activity</h2>
-          <p className="mt-2 text-sm text-slate-400">Latest saved campaigns.</p>
+          <p className="mt-2 text-sm text-slate-400">
+            Latest saved campaigns.
+          </p>
 
           <div className="mt-6 space-y-4">
             {stats.recentCampaigns.length === 0 ? (
