@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 
 type Lead = {
@@ -19,6 +19,13 @@ type BulkEmail = {
   email: string;
   subject: string;
   message: string;
+};
+
+type CampaignStats = {
+  totalCampaigns: number;
+  totalLeads: number;
+  totalEmails: number;
+  conversionRate: number;
 };
 
 const demoLeads: Lead[] = [
@@ -66,6 +73,13 @@ export default function Dashboard() {
   const [loadingBulk, setLoadingBulk] = useState(false);
   const [savingCampaign, setSavingCampaign] = useState(false);
 
+  const [campaignStats, setCampaignStats] = useState<CampaignStats>({
+    totalCampaigns: 0,
+    totalLeads: 0,
+    totalEmails: 0,
+    conversionRate: 0,
+  });
+
   const [bulkEmails, setBulkEmails] = useState<BulkEmail[]>([]);
 
   const [newLead, setNewLead] = useState({
@@ -105,6 +119,30 @@ export default function Dashboard() {
 
   const buttonBase =
     "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0";
+
+  async function loadCampaignStats() {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(`/api/stats?user_id=${user.id}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setCampaignStats({
+          totalCampaigns: data.totalCampaigns || 0,
+          totalLeads: data.totalLeads || 0,
+          totalEmails: data.totalEmails || 0,
+          conversionRate: data.conversionRate || 0,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  useEffect(() => {
+    loadCampaignStats();
+  }, [user?.id]);
 
   async function handleSearch() {
     try {
@@ -294,6 +332,7 @@ export default function Dashboard() {
         throw new Error(data.error || "Failed to save campaign");
       }
 
+      await loadCampaignStats();
       alert("Campaign saved successfully!");
     } catch (error) {
       console.error(error);
@@ -302,6 +341,7 @@ export default function Dashboard() {
       setSavingCampaign(false);
     }
   }
+
   async function generateOutreach() {
     try {
       setLoadingOutreach(true);
@@ -413,6 +453,27 @@ export default function Dashboard() {
           </div>
         </nav>
 
+        <section className="mt-8 grid gap-6 md:grid-cols-4">
+          {[
+            ["Total Campaigns", campaignStats.totalCampaigns, "from saved campaigns", "cyan"],
+            ["Total Leads", campaignStats.totalLeads, "saved in database", "green"],
+            ["Emails Found", campaignStats.totalEmails, "available contacts", "purple"],
+            ["Conversion Rate", `${campaignStats.conversionRate}%`, "emails / leads", "yellow"],
+          ].map(([label, value, sub, color]) => (
+            <div
+              key={label}
+              className={`relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.045] p-6 shadow-2xl transition hover:-translate-y-1 hover:bg-white/[0.07]`}
+            >
+              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-cyan-300/10 blur-2xl" />
+              <p className="text-sm text-slate-400">{label}</p>
+              <h2 className="mt-3 text-4xl font-black">{value}</h2>
+              <p className="mt-2 text-xs uppercase tracking-[0.2em] text-cyan-300">
+                {sub}
+              </p>
+            </div>
+          ))}
+        </section>
+
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Find real leads</h2>
           <p className="mt-2 text-slate-400">
@@ -492,8 +553,8 @@ export default function Dashboard() {
 
         <section className="mt-8 grid gap-6 md:grid-cols-4">
           {[
-            [String(stats.total), "Leads found"],
-            [String(stats.emails), "Emails found"],
+            [String(stats.total), "Current leads"],
+            [String(stats.emails), "Current emails"],
             [String(stats.websites), "Websites found"],
             [String(stats.selected), "Selected leads"],
           ].map(([number, label]) => (
@@ -697,9 +758,3 @@ export default function Dashboard() {
     </main>
   );
 }
-
-
-
-
-
-
