@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 type Campaign = {
   id: number;
@@ -15,6 +16,8 @@ type Campaign = {
 
 export default function CampaignsPage() {
   const { user } = useUser();
+  const router = useRouter();
+
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,7 +69,7 @@ export default function CampaignsPage() {
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Saved campaigns</h2>
           <p className="mt-2 text-slate-400">
-            Campaigns saved from your AI Sales Employee dashboard.
+            Click any campaign to open its saved leads.
           </p>
 
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
@@ -99,13 +102,24 @@ export default function CampaignsPage() {
                   campaigns.map((campaign) => (
                     <tr
                       key={campaign.id}
-                      className="border-t border-white/10 transition hover:bg-white/[0.04]"
+                      onClick={() => router.push(`/campaigns/${campaign.id}`)}
+                      className="cursor-pointer border-t border-white/10 transition hover:bg-cyan-300/10"
                     >
-                      <td className="px-5 py-4 font-bold">{campaign.name}</td>
-                      <td className="px-5 py-4 text-slate-300">{campaign.niche}</td>
-                      <td className="px-5 py-4 text-slate-300">{campaign.location}</td>
-                      <td className="px-5 py-4 text-cyan-300">{campaign.leads_count}</td>
-                      <td className="px-5 py-4 text-cyan-300">{campaign.emails_count}</td>
+                      <td className="px-5 py-4 font-bold">
+                        {campaign.name}
+                      </td>
+                      <td className="px-5 py-4 text-slate-300">
+                        {campaign.niche}
+                      </td>
+                      <td className="px-5 py-4 text-slate-300">
+                        {campaign.location}
+                      </td>
+                      <td className="px-5 py-4 text-cyan-300">
+                        {campaign.leads_count}
+                      </td>
+                      <td className="px-5 py-4 text-cyan-300">
+                        {campaign.emails_count}
+                      </td>
                       <td className="px-5 py-4 text-slate-400">
                         {new Date(campaign.created_at).toLocaleDateString()}
                       </td>
