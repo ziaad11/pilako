@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 
 function getSupabase() {
@@ -15,9 +15,9 @@ function getSupabase() {
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
+    const user = await currentUser();
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     const { data, error } = await supabase
       .from("campaigns")
       .insert({
-        user_id: userId,
+        user_id: user.id,
         name,
         niche,
         location,
@@ -40,10 +40,7 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ campaign: data });
@@ -57,9 +54,9 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const { userId } = await auth();
+    const user = await currentUser();
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -68,14 +65,11 @@ export async function GET() {
     const { data, error } = await supabase
       .from("campaigns")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ campaigns: data || [] });
