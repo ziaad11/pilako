@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 type Lead = {
   id: number;
@@ -758,3 +759,5 @@ export default function Dashboard() {
     </main>
   );
 }
+
+
