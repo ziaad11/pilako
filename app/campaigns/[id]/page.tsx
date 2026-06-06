@@ -43,19 +43,23 @@ export default function CampaignDetailsPage() {
   const [savingNoteId, setSavingNoteId] = useState<number | null>(null);
   const [savingDealId, setSavingDealId] = useState<number | null>(null);
 
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
+  const [outreachType, setOutreachType] = useState("Cold Email");
+  const [aiText, setAiText] = useState("");
+  const [generatingAi, setGeneratingAi] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   async function loadCampaignDetails() {
     try {
       setLoading(true);
-
       const response = await fetch(`/api/campaigns?campaign_id=${campaignId}`);
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to load campaign");
-      }
+      if (!response.ok) throw new Error(data.error || "Failed to load campaign");
 
       setCampaign(data.campaign);
       setLeads(data.leads || []);
+      if (data.leads?.[0]?.id) setSelectedLeadId(data.leads[0].id);
     } catch (error) {
       console.error(error);
       alert("Failed to load campaign details.");
@@ -76,20 +80,12 @@ export default function CampaignDetailsPage() {
     try {
       const response = await fetch("/api/campaigns", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          lead_id: leadId,
-          ...updates,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId, ...updates }),
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update lead");
-      }
+      if (!response.ok) throw new Error(data.error || "Failed to update lead");
     } catch (error) {
       console.error(error);
       alert("Failed to update lead.");
@@ -97,11 +93,64 @@ export default function CampaignDetailsPage() {
     }
   }
 
+  async function generateAIOutreach() {
+    if (!campaign || !selectedLeadId) {
+      alert("Select a lead first.");
+      return;
+    }
+
+    const lead = leads.find((item) => item.id === selectedLeadId);
+
+    if (!lead) {
+      alert("Lead not found.");
+      return;
+    }
+
+    try {
+      setGeneratingAi(true);
+      setAiText("");
+
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company: lead.company,
+          niche: campaign.niche,
+          location: campaign.location,
+          type: outreachType,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate outreach");
+      }
+
+      setAiText(data.text || "");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to generate AI outreach.");
+    } finally {
+      setGeneratingAi(false);
+    }
+  }
+
+  async function copyAIText() {
+    if (!aiText) return;
+
+    await navigator.clipboard.writeText(aiText);
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 1600);
+  }
+
   async function updateLeadStatus(leadId: number, status: string) {
     setLeads((current) =>
       current.map((lead) => (lead.id === leadId ? { ...lead, status } : lead))
     );
-
     await updateLeadCRM(leadId, { status });
   }
 
@@ -161,10 +210,7 @@ export default function CampaignDetailsPage() {
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Delete failed");
-      }
+      if (!response.ok) throw new Error(data.error || "Delete failed");
 
       window.location.href = "/campaigns";
     } catch (error) {
@@ -241,10 +287,7 @@ export default function CampaignDetailsPage() {
   }
 
   function downloadCSV(filename: string, csvContent: string) {
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
 
@@ -315,7 +358,7 @@ export default function CampaignDetailsPage() {
             </p>
             <h1 className="mt-2 text-4xl font-black">{campaign.name}</h1>
             <p className="mt-2 text-slate-400">
-              Sales CRM workspace with pipeline, follow-ups, deal value, notes, and export.
+              Sales CRM workspace with pipeline, follow-ups, deal value, notes, and AI outreach.
             </p>
           </div>
 
@@ -373,6 +416,67 @@ export default function CampaignDetailsPage() {
               <h3 className="mt-2 text-4xl font-black">{item.count}</h3>
             </div>
           ))}
+        </section>
+
+        <section className="mt-8 rounded-[2.5rem] border border-cyan-300/20 bg-cyan-300/[0.06] p-6">
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div>
+              <h2 className="text-3xl font-black">AI Outreach Generator</h2>
+              <p className="mt-2 text-slate-300">
+                Generate cold emails, follow-ups, and LinkedIn messages for selected leads.
+              </p>
+            </div>
+
+            <button
+              onClick={generateAIOutreach}
+              disabled={generatingAi || leads.length === 0}
+              className="cursor-pointer rounded-2xl bg-cyan-300 px-6 py-4 font-black text-black transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {generatingAi ? "Generating..." : "Generate Outreach"}
+            </button>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-[1fr_auto]">
+            <select
+              value={selectedLeadId || ""}
+              onChange={(e) => setSelectedLeadId(Number(e.target.value))}
+              className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none focus:border-cyan-300/60"
+            >
+              {leads.map((lead) => (
+                <option key={lead.id} value={lead.id}>
+                  {lead.company}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={outreachType}
+              onChange={(e) => setOutreachType(e.target.value)}
+              className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none focus:border-cyan-300/60"
+            >
+              <option value="Cold Email">Cold Email</option>
+              <option value="Follow-up Email">Follow-up Email</option>
+              <option value="LinkedIn Message">LinkedIn Message</option>
+            </select>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-5">
+            <div className="flex items-center justify-between gap-4">
+              <h3 className="text-xl font-black">Generated Message</h3>
+
+              <button
+                onClick={copyAIText}
+                disabled={!aiText}
+                className="rounded-full border border-white/15 px-4 py-2 text-sm font-bold transition hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+
+            <div className="mt-5 min-h-[220px] whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-slate-300">
+              {aiText || "Select a lead and click Generate Outreach."}
+            </div>
+          </div>
         </section>
 
         <section className="mt-8 rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-6">
