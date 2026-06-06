@@ -25,14 +25,35 @@ type RecentCampaign = {
   created_at: string;
 };
 
+type TopCampaign = {
+  id: number;
+  name: string;
+  niche: string;
+  location: string;
+  leads_count: number;
+  emails_count: number;
+};
+
+type RecentActivity = {
+  id: number;
+  title: string;
+  description: string;
+  created_at: string;
+};
+
 type Stats = {
   totalCampaigns: number;
   totalLeads: number;
   totalEmails: number;
   conversionRate: number;
+  pipelineValue: number;
+  followUpsDue: number;
+  closedDeals: number;
   topLocations: TopLocation[];
   topNiches: TopNiche[];
   recentCampaigns: RecentCampaign[];
+  topCampaigns: TopCampaign[];
+  recentActivity: RecentActivity[];
 };
 
 export default function AnalyticsPanel() {
@@ -43,9 +64,14 @@ export default function AnalyticsPanel() {
     totalLeads: 0,
     totalEmails: 0,
     conversionRate: 0,
+    pipelineValue: 0,
+    followUpsDue: 0,
+    closedDeals: 0,
     topLocations: [],
     topNiches: [],
     recentCampaigns: [],
+    topCampaigns: [],
+    recentActivity: [],
   });
 
   useEffect(() => {
@@ -62,9 +88,14 @@ export default function AnalyticsPanel() {
             totalLeads: data.totalLeads || 0,
             totalEmails: data.totalEmails || 0,
             conversionRate: data.conversionRate || 0,
+            pipelineValue: data.pipelineValue || 0,
+            followUpsDue: data.followUpsDue || 0,
+            closedDeals: data.closedDeals || 0,
             topLocations: data.topLocations || [],
             topNiches: data.topNiches || [],
             recentCampaigns: data.recentCampaigns || [],
+            topCampaigns: data.topCampaigns || [],
+            recentActivity: data.recentActivity || [],
           });
         }
       } catch (error) {
@@ -91,13 +122,13 @@ export default function AnalyticsPanel() {
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <p className="text-sm uppercase tracking-[0.35em] text-cyan-300">
-              Analytics
+              Executive Dashboard
             </p>
             <h2 className="mt-3 text-4xl font-black">
-              Sales intelligence overview
+              Sales pipeline overview
             </h2>
             <p className="mt-3 max-w-2xl text-slate-400">
-              Track saved campaigns, leads, emails, locations, niches, and recent activity.
+              Track campaigns, leads, pipeline value, follow-ups, closed deals, and top-performing markets.
             </p>
           </div>
 
@@ -109,12 +140,14 @@ export default function AnalyticsPanel() {
           </a>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-4">
+        <div className="mt-8 grid gap-5 md:grid-cols-3 xl:grid-cols-6">
           {[
-            ["Total Campaigns", stats.totalCampaigns, "Saved campaigns"],
-            ["Total Leads", stats.totalLeads, "Database leads"],
-            ["Emails Found", stats.totalEmails, "Available contacts"],
-            ["Conversion Rate", `${stats.conversionRate}%`, "Emails / leads"],
+            ["Campaigns", stats.totalCampaigns, "Saved"],
+            ["Leads", stats.totalLeads, "Database"],
+            ["Emails", stats.totalEmails, "Found"],
+            ["Pipeline", `$${stats.pipelineValue.toLocaleString()}`, "Value"],
+            ["Follow-ups", stats.followUpsDue, "Due"],
+            ["Closed", stats.closedDeals, "Deals"],
           ].map(([label, value, sub]) => (
             <div
               key={label}
@@ -122,7 +155,7 @@ export default function AnalyticsPanel() {
             >
               <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl" />
               <p className="text-sm text-slate-400">{label}</p>
-              <h3 className="mt-4 text-5xl font-black">{value}</h3>
+              <h3 className="mt-4 text-4xl font-black">{value}</h3>
               <p className="mt-3 text-xs uppercase tracking-[0.22em] text-cyan-300">
                 {sub}
               </p>
@@ -201,27 +234,82 @@ export default function AnalyticsPanel() {
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
           <h2 className="text-2xl font-black">Recent Activity</h2>
           <p className="mt-2 text-sm text-slate-400">
-            Latest saved campaigns.
+            Latest saved campaign events.
           </p>
 
           <div className="mt-6 space-y-4">
-            {stats.recentCampaigns.length === 0 ? (
-              <p className="text-slate-500">No recent campaigns yet.</p>
+            {stats.recentActivity.length === 0 ? (
+              <p className="text-slate-500">No recent activity yet.</p>
             ) : (
-              stats.recentCampaigns.map((campaign) => (
+              stats.recentActivity.map((activity) => (
                 <a
-                  key={campaign.id}
-                  href={`/campaigns/${campaign.id}`}
+                  key={`${activity.id}-${activity.created_at}`}
+                  href={`/campaigns/${activity.id}`}
                   className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
                 >
-                  <p className="font-black">{campaign.name}</p>
+                  <p className="font-black">{activity.title}</p>
                   <p className="mt-1 text-sm text-slate-400">
-                    {campaign.leads_count} leads • {campaign.location}
+                    {activity.description}
                   </p>
                 </a>
               ))
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+        <h2 className="text-2xl font-black">Top Campaigns</h2>
+        <p className="mt-2 text-sm text-slate-400">
+          Campaigns ranked by saved leads.
+        </p>
+
+        <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
+          <table className="w-full min-w-[800px] border-collapse text-left">
+            <thead className="bg-white/[0.06] text-sm text-slate-300">
+              <tr>
+                <th className="px-5 py-4">Campaign</th>
+                <th className="px-5 py-4">Niche</th>
+                <th className="px-5 py-4">Location</th>
+                <th className="px-5 py-4">Leads</th>
+                <th className="px-5 py-4">Emails</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {stats.topCampaigns.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-10 text-center text-slate-400">
+                    No campaigns yet.
+                  </td>
+                </tr>
+              ) : (
+                stats.topCampaigns.map((campaign) => (
+                  <tr
+                    key={campaign.id}
+                    className="border-t border-white/10 transition hover:bg-cyan-300/10"
+                  >
+                    <td className="px-5 py-4">
+                      <a
+                        href={`/campaigns/${campaign.id}`}
+                        className="font-black text-white hover:text-cyan-300"
+                      >
+                        {campaign.name}
+                      </a>
+                    </td>
+                    <td className="px-5 py-4 text-slate-300">{campaign.niche}</td>
+                    <td className="px-5 py-4 text-slate-300">{campaign.location}</td>
+                    <td className="px-5 py-4 font-bold text-cyan-300">
+                      {campaign.leads_count}
+                    </td>
+                    <td className="px-5 py-4 font-bold text-cyan-300">
+                      {campaign.emails_count}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
