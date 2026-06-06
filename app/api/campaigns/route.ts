@@ -10,6 +10,8 @@ type Lead = {
   score: string;
   status?: string;
   notes?: string;
+  follow_up_date?: string | null;
+  deal_value?: number;
 };
 
 function getSupabase() {
@@ -76,6 +78,8 @@ export async function POST(req: Request) {
         score: lead.score,
         status: lead.status || "New",
         notes: lead.notes || "",
+        follow_up_date: lead.follow_up_date || null,
+        deal_value: lead.deal_value || 0,
       }));
 
       const { error: leadsError } = await supabase
@@ -159,7 +163,7 @@ export async function PATCH(req: Request) {
     const supabase = getSupabase();
     const body = await req.json();
 
-    const { lead_id, status, notes } = body;
+    const { lead_id, status, notes, follow_up_date, deal_value } = body;
 
     if (!lead_id) {
       return NextResponse.json({ error: "Missing lead_id" }, { status: 400 });
@@ -168,6 +172,8 @@ export async function PATCH(req: Request) {
     const updateData: {
       status?: string;
       notes?: string;
+      follow_up_date?: string | null;
+      deal_value?: number;
     } = {};
 
     if (typeof status === "string") {
@@ -178,9 +184,17 @@ export async function PATCH(req: Request) {
       updateData.notes = notes;
     }
 
+    if (typeof follow_up_date === "string" || follow_up_date === null) {
+      updateData.follow_up_date = follow_up_date;
+    }
+
+    if (typeof deal_value === "number") {
+      updateData.deal_value = deal_value;
+    }
+
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { error: "Missing status or notes" },
+        { error: "Missing status, notes, follow_up_date, or deal_value" },
         { status: 400 }
       );
     }
