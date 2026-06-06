@@ -22,7 +22,10 @@ type Lead = {
   phone: string;
   location: string;
   score: string;
+  status: string;
 };
+
+const statuses = ["New", "Contacted", "Interested", "Meeting Booked", "Closed"];
 
 export default function CampaignDetailsPage() {
   const params = useParams();
@@ -56,9 +59,39 @@ export default function CampaignDetailsPage() {
     }
   }
 
+  async function updateLeadStatus(leadId: number, status: string) {
+    try {
+      setLeads((current) =>
+        current.map((lead) =>
+          lead.id === leadId ? { ...lead, status } : lead
+        )
+      );
+
+      const response = await fetch("/api/campaigns", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lead_id: leadId,
+          status,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update status");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Failed to update lead status.");
+      loadCampaignDetails();
+    }
+  }
+
   async function deleteCampaign() {
     const confirmed = confirm("Are you sure you want to delete this campaign?");
-
     if (!confirmed) return;
 
     try {
@@ -87,7 +120,7 @@ export default function CampaignDetailsPage() {
     const query = search.toLowerCase().trim();
 
     let result = leads.filter((lead) =>
-      `${lead.company} ${lead.website} ${lead.email} ${lead.phone} ${lead.location}`
+      `${lead.company} ${lead.website} ${lead.email} ${lead.phone} ${lead.location} ${lead.status}`
         .toLowerCase()
         .includes(query)
     );
@@ -104,6 +137,10 @@ export default function CampaignDetailsPage() {
       result = [...result].sort((a, b) => a.location.localeCompare(b.location));
     }
 
+    if (sortBy === "status") {
+      result = [...result].sort((a, b) => a.status.localeCompare(b.status));
+    }
+
     return result;
   }, [leads, search, sortBy]);
 
@@ -113,6 +150,11 @@ export default function CampaignDetailsPage() {
       lead.email !== "Not found" &&
       lead.email !== "Not provided"
   ).length;
+
+  const pipeline = statuses.map((status) => ({
+    status,
+    count: leads.filter((lead) => (lead.status || "New") === status).length,
+  }));
 
   function makeCSV(headers: string[], rows: string[][]) {
     return [headers, ...rows]
@@ -138,7 +180,15 @@ export default function CampaignDetailsPage() {
   }
 
   function exportLeadsCSV() {
-    const headers = ["Company", "Website", "Email", "Phone", "Location", "Score"];
+    const headers = [
+      "Company",
+      "Website",
+      "Email",
+      "Phone",
+      "Location",
+      "Score",
+      "Status",
+    ];
 
     const rows = filteredLeads.map((lead) => [
       lead.company,
@@ -147,6 +197,7 @@ export default function CampaignDetailsPage() {
       lead.phone,
       lead.location,
       lead.score,
+      lead.status || "New",
     ]);
 
     downloadCSV(`pilako-campaign-${campaignId}-leads.csv`, makeCSV(headers, rows));
@@ -182,7 +233,7 @@ export default function CampaignDetailsPage() {
             </p>
             <h1 className="mt-2 text-4xl font-black">{campaign.name}</h1>
             <p className="mt-2 text-slate-400">
-              Campaign intelligence, saved leads, and export-ready contacts.
+              Campaign intelligence, saved leads, pipeline status, and export-ready contacts.
             </p>
           </div>
 
@@ -228,12 +279,24 @@ export default function CampaignDetailsPage() {
           </div>
         </section>
 
+        <section className="mt-8 grid gap-5 md:grid-cols-5">
+          {pipeline.map((item) => (
+            <div
+              key={item.status}
+              className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"
+            >
+              <p className="text-sm text-slate-400">{item.status}</p>
+              <h3 className="mt-2 text-4xl font-black">{item.count}</h3>
+            </div>
+          ))}
+        </section>
+
         <section className="mt-8 rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-6">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
               <h2 className="text-3xl font-black">Saved Leads</h2>
               <p className="mt-2 text-slate-400">
-                Search, sort, and export all saved contacts inside this campaign.
+                Search, sort, update status, and export all contacts inside this campaign.
               </p>
             </div>
 
@@ -241,7 +304,7 @@ export default function CampaignDetailsPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search company, website, email, phone, location..."
+                placeholder="Search company, website, email, phone, location, status..."
                 className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
               />
 
@@ -253,6 +316,7 @@ export default function CampaignDetailsPage() {
                 <option value="company">Company</option>
                 <option value="email">Email</option>
                 <option value="location">Location</option>
+                <option value="status">Status</option>
               </select>
 
               <button
@@ -265,25 +329,8 @@ export default function CampaignDetailsPage() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-5 md:grid-cols-3">
-            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-5">
-              <p className="text-sm text-slate-400">Visible Leads</p>
-              <h3 className="mt-2 text-4xl font-black">{filteredLeads.length}</h3>
-            </div>
-
-            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-5">
-              <p className="text-sm text-slate-400">Total Leads</p>
-              <h3 className="mt-2 text-4xl font-black">{leads.length}</h3>
-            </div>
-
-            <div className="rounded-[2rem] border border-white/10 bg-black/30 p-5">
-              <p className="text-sm text-slate-400">Emails Found</p>
-              <h3 className="mt-2 text-4xl font-black">{emailCount}</h3>
-            </div>
-          </div>
-
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[1050px] border-collapse text-left">
+            <table className="w-full min-w-[1180px] border-collapse text-left">
               <thead className="bg-white/[0.06] text-sm text-slate-300">
                 <tr>
                   <th className="px-5 py-4">Company</th>
@@ -292,13 +339,14 @@ export default function CampaignDetailsPage() {
                   <th className="px-5 py-4">Phone</th>
                   <th className="px-5 py-4">Location</th>
                   <th className="px-5 py-4">Score</th>
+                  <th className="px-5 py-4">Status</th>
                 </tr>
               </thead>
 
               <tbody>
                 {filteredLeads.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
+                    <td colSpan={7} className="px-5 py-12 text-center text-slate-400">
                       No leads found.
                     </td>
                   </tr>
@@ -317,6 +365,21 @@ export default function CampaignDetailsPage() {
                         <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-sm font-bold text-cyan-200">
                           {lead.score}
                         </span>
+                      </td>
+                      <td className="px-5 py-5">
+                        <select
+                          value={lead.status || "New"}
+                          onChange={(e) =>
+                            updateLeadStatus(lead.id, e.target.value)
+                          }
+                          className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-sm font-bold outline-none focus:border-cyan-300/60"
+                        >
+                          {statuses.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                     </tr>
                   ))

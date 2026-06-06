@@ -8,6 +8,7 @@ type Lead = {
   phone: string;
   location: string;
   score: string;
+  status?: string;
 };
 
 function getSupabase() {
@@ -72,9 +73,12 @@ export async function POST(req: Request) {
         phone: lead.phone,
         location: lead.location,
         score: lead.score,
+        status: lead.status || "New",
       }));
 
-      const { error: leadsError } = await supabase.from("leads").insert(leadsToInsert);
+      const { error: leadsError } = await supabase
+        .from("leads")
+        .insert(leadsToInsert);
 
       if (leadsError) {
         return NextResponse.json({ error: leadsError.message }, { status: 500 });
@@ -140,6 +144,40 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ campaigns: data || [] });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const supabase = getSupabase();
+    const body = await req.json();
+
+    const { lead_id, status } = body;
+
+    if (!lead_id || !status) {
+      return NextResponse.json(
+        { error: "Missing lead_id or status" },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("leads")
+      .update({ status })
+      .eq("id", lead_id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ lead: data });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown server error" },
