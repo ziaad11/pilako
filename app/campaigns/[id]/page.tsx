@@ -40,6 +40,7 @@ export default function CampaignDetailsPage() {
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("company");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [savingNoteId, setSavingNoteId] = useState<number | null>(null);
   const [savingDealId, setSavingDealId] = useState<number | null>(null);
 
@@ -52,14 +53,20 @@ export default function CampaignDetailsPage() {
   async function loadCampaignDetails() {
     try {
       setLoading(true);
+
       const response = await fetch(`/api/campaigns?campaign_id=${campaignId}`);
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || "Failed to load campaign");
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load campaign");
+      }
 
       setCampaign(data.campaign);
       setLeads(data.leads || []);
-      if (data.leads?.[0]?.id) setSelectedLeadId(data.leads[0].id);
+
+      if (data.leads?.[0]?.id) {
+        setSelectedLeadId(data.leads[0].id);
+      }
     } catch (error) {
       console.error(error);
       alert("Failed to load campaign details.");
@@ -85,7 +92,10 @@ export default function CampaignDetailsPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to update lead");
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update lead");
+      }
     } catch (error) {
       console.error(error);
       alert("Failed to update lead.");
@@ -151,6 +161,7 @@ export default function CampaignDetailsPage() {
     setLeads((current) =>
       current.map((lead) => (lead.id === leadId ? { ...lead, status } : lead))
     );
+
     await updateLeadCRM(leadId, { status });
   }
 
@@ -210,7 +221,10 @@ export default function CampaignDetailsPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Delete failed");
+
+      if (!response.ok) {
+        throw new Error(data.error || "Delete failed");
+      }
 
       window.location.href = "/campaigns";
     } catch (error) {
@@ -229,6 +243,12 @@ export default function CampaignDetailsPage() {
         .toLowerCase()
         .includes(query)
     );
+
+    if (statusFilter !== "All") {
+      result = result.filter(
+        (lead) => (lead.status || "New") === statusFilter
+      );
+    }
 
     if (sortBy === "company") {
       result = [...result].sort((a, b) => a.company.localeCompare(b.company));
@@ -253,7 +273,7 @@ export default function CampaignDetailsPage() {
     }
 
     return result;
-  }, [leads, search, sortBy]);
+  }, [leads, search, sortBy, statusFilter]);
 
   const emailCount = leads.filter(
     (lead) =>
@@ -480,6 +500,45 @@ export default function CampaignDetailsPage() {
         </section>
 
         <section className="mt-8 rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-6">
+          <div className="mb-6">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+              <div>
+                <h2 className="text-3xl font-black">Status Board</h2>
+                <p className="mt-2 text-slate-400">
+                  Click a status to filter your CRM pipeline.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setStatusFilter("All")}
+                className={`rounded-full px-5 py-3 font-black transition ${
+                  statusFilter === "All"
+                    ? "bg-cyan-300 text-black"
+                    : "border border-white/10 bg-black/30 text-white hover:bg-white hover:text-black"
+                }`}
+              >
+                All Leads
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-5">
+              {pipeline.map((item) => (
+                <button
+                  key={item.status}
+                  onClick={() => setStatusFilter(item.status)}
+                  className={`rounded-[2rem] border p-5 text-left transition hover:-translate-y-1 ${
+                    statusFilter === item.status
+                      ? "border-cyan-300 bg-cyan-300/15"
+                      : "border-white/10 bg-black/30 hover:border-cyan-300/40"
+                  }`}
+                >
+                  <p className="text-sm text-slate-400">{item.status}</p>
+                  <h3 className="mt-2 text-4xl font-black">{item.count}</h3>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
               <h2 className="text-3xl font-black">Sales Pipeline Leads</h2>
