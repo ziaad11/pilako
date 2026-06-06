@@ -23,6 +23,7 @@ type Lead = {
   location: string;
   score: string;
   status: string;
+  notes: string;
 };
 
 const statuses = ["New", "Contacted", "Interested", "Meeting Booked", "Closed"];
@@ -37,6 +38,7 @@ export default function CampaignDetailsPage() {
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("company");
+  const [savingNoteId, setSavingNoteId] = useState<number | null>(null);
 
   async function loadCampaignDetails() {
     try {
@@ -90,6 +92,35 @@ export default function CampaignDetailsPage() {
     }
   }
 
+  async function saveLeadNotes(leadId: number, notes: string) {
+    try {
+      setSavingNoteId(leadId);
+
+      const response = await fetch("/api/campaigns", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lead_id: leadId,
+          notes,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save notes");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Failed to save notes.");
+      loadCampaignDetails();
+    } finally {
+      setSavingNoteId(null);
+    }
+  }
+
   async function deleteCampaign() {
     const confirmed = confirm("Are you sure you want to delete this campaign?");
     if (!confirmed) return;
@@ -120,7 +151,7 @@ export default function CampaignDetailsPage() {
     const query = search.toLowerCase().trim();
 
     let result = leads.filter((lead) =>
-      `${lead.company} ${lead.website} ${lead.email} ${lead.phone} ${lead.location} ${lead.status}`
+      `${lead.company} ${lead.website} ${lead.email} ${lead.phone} ${lead.location} ${lead.status} ${lead.notes}`
         .toLowerCase()
         .includes(query)
     );
@@ -156,6 +187,14 @@ export default function CampaignDetailsPage() {
     count: leads.filter((lead) => (lead.status || "New") === status).length,
   }));
 
+  function updateLocalNotes(leadId: number, notes: string) {
+    setLeads((current) =>
+      current.map((lead) =>
+        lead.id === leadId ? { ...lead, notes } : lead
+      )
+    );
+  }
+
   function makeCSV(headers: string[], rows: string[][]) {
     return [headers, ...rows]
       .map((row) =>
@@ -188,6 +227,7 @@ export default function CampaignDetailsPage() {
       "Location",
       "Score",
       "Status",
+      "Notes",
     ];
 
     const rows = filteredLeads.map((lead) => [
@@ -198,6 +238,7 @@ export default function CampaignDetailsPage() {
       lead.location,
       lead.score,
       lead.status || "New",
+      lead.notes || "",
     ]);
 
     downloadCSV(`pilako-campaign-${campaignId}-leads.csv`, makeCSV(headers, rows));
@@ -225,7 +266,7 @@ export default function CampaignDetailsPage() {
 
   return (
     <main className="min-h-screen bg-[#020617] px-6 py-8 text-white">
-      <div className="mx-auto max-w-[1500px]">
+      <div className="mx-auto max-w-[1600px]">
         <nav className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
@@ -233,7 +274,7 @@ export default function CampaignDetailsPage() {
             </p>
             <h1 className="mt-2 text-4xl font-black">{campaign.name}</h1>
             <p className="mt-2 text-slate-400">
-              Campaign intelligence, saved leads, pipeline status, and export-ready contacts.
+              CRM campaign workspace with status, notes, pipeline, and export-ready contacts.
             </p>
           </div>
 
@@ -283,7 +324,7 @@ export default function CampaignDetailsPage() {
           {pipeline.map((item) => (
             <div
               key={item.status}
-              className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"
+              className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 transition hover:-translate-y-1 hover:border-cyan-300/40"
             >
               <p className="text-sm text-slate-400">{item.status}</p>
               <h3 className="mt-2 text-4xl font-black">{item.count}</h3>
@@ -294,17 +335,17 @@ export default function CampaignDetailsPage() {
         <section className="mt-8 rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-6">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
-              <h2 className="text-3xl font-black">Saved Leads</h2>
+              <h2 className="text-3xl font-black">Saved Leads CRM</h2>
               <p className="mt-2 text-slate-400">
-                Search, sort, update status, and export all contacts inside this campaign.
+                Search, sort, update status, write notes, and export contacts.
               </p>
             </div>
 
-            <div className="grid w-full gap-3 md:grid-cols-[1fr_auto_auto] lg:w-[860px]">
+            <div className="grid w-full gap-3 md:grid-cols-[1fr_auto_auto] lg:w-[920px]">
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search company, website, email, phone, location, status..."
+                placeholder="Search company, website, email, phone, status, notes..."
                 className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
               />
 
@@ -330,7 +371,7 @@ export default function CampaignDetailsPage() {
           </div>
 
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[1180px] border-collapse text-left">
+            <table className="w-full min-w-[1450px] border-collapse text-left">
               <thead className="bg-white/[0.06] text-sm text-slate-300">
                 <tr>
                   <th className="px-5 py-4">Company</th>
@@ -340,13 +381,14 @@ export default function CampaignDetailsPage() {
                   <th className="px-5 py-4">Location</th>
                   <th className="px-5 py-4">Score</th>
                   <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4">Notes</th>
                 </tr>
               </thead>
 
               <tbody>
                 {filteredLeads.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-slate-400">
+                    <td colSpan={8} className="px-5 py-12 text-center text-slate-400">
                       No leads found.
                     </td>
                   </tr>
@@ -354,18 +396,66 @@ export default function CampaignDetailsPage() {
                   filteredLeads.map((lead) => (
                     <tr
                       key={lead.id}
-                      className="border-t border-white/10 transition hover:bg-cyan-300/10"
+                      className="border-t border-white/10 align-top transition hover:bg-cyan-300/10"
                     >
                       <td className="px-5 py-5 font-black">{lead.company}</td>
-                      <td className="px-5 py-5 text-cyan-300">{lead.website}</td>
-                      <td className="px-5 py-5 text-slate-300">{lead.email}</td>
-                      <td className="px-5 py-5 text-slate-300">{lead.phone}</td>
+
+                      <td className="px-5 py-5">
+                        {lead.website && lead.website !== "Not found" ? (
+                          <a
+                            href={
+                              lead.website.startsWith("http")
+                                ? lead.website
+                                : `https://${lead.website}`
+                            }
+                            target="_blank"
+                            className="font-bold text-cyan-300 hover:underline"
+                          >
+                            Open Website
+                          </a>
+                        ) : (
+                          <span className="text-slate-500">Not found</span>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-5">
+                        {lead.email &&
+                        lead.email !== "Not found" &&
+                        lead.email !== "Not provided" ? (
+                          <a
+                            href={`mailto:${lead.email}`}
+                            className="font-bold text-cyan-300 hover:underline"
+                          >
+                            Email
+                          </a>
+                        ) : (
+                          <span className="text-slate-500">{lead.email}</span>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-5">
+                        {lead.phone &&
+                        lead.phone !== "Not found" &&
+                        lead.phone !== "Not provided" ? (
+                          <a
+                            href={`tel:${lead.phone}`}
+                            className="font-bold text-cyan-300 hover:underline"
+                          >
+                            {lead.phone}
+                          </a>
+                        ) : (
+                          <span className="text-slate-500">{lead.phone}</span>
+                        )}
+                      </td>
+
                       <td className="px-5 py-5 text-slate-300">{lead.location}</td>
+
                       <td className="px-5 py-5">
                         <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-sm font-bold text-cyan-200">
                           {lead.score}
                         </span>
                       </td>
+
                       <td className="px-5 py-5">
                         <select
                           value={lead.status || "New"}
@@ -380,6 +470,29 @@ export default function CampaignDetailsPage() {
                             </option>
                           ))}
                         </select>
+                      </td>
+
+                      <td className="px-5 py-5">
+                        <div className="flex min-w-[320px] gap-3">
+                          <textarea
+                            value={lead.notes || ""}
+                            onChange={(e) =>
+                              updateLocalNotes(lead.id, e.target.value)
+                            }
+                            placeholder="Add notes..."
+                            className="h-20 w-full resize-none rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
+                          />
+
+                          <button
+                            onClick={() =>
+                              saveLeadNotes(lead.id, lead.notes || "")
+                            }
+                            disabled={savingNoteId === lead.id}
+                            className="h-11 rounded-full bg-cyan-300 px-4 text-sm font-black text-black transition hover:bg-cyan-200 disabled:opacity-60"
+                          >
+                            {savingNoteId === lead.id ? "Saving" : "Save"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

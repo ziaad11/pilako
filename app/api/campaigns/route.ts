@@ -9,6 +9,7 @@ type Lead = {
   location: string;
   score: string;
   status?: string;
+  notes?: string;
 };
 
 function getSupabase() {
@@ -74,6 +75,7 @@ export async function POST(req: Request) {
         location: lead.location,
         score: lead.score,
         status: lead.status || "New",
+        notes: lead.notes || "",
       }));
 
       const { error: leadsError } = await supabase
@@ -157,18 +159,35 @@ export async function PATCH(req: Request) {
     const supabase = getSupabase();
     const body = await req.json();
 
-    const { lead_id, status } = body;
+    const { lead_id, status, notes } = body;
 
-    if (!lead_id || !status) {
+    if (!lead_id) {
+      return NextResponse.json({ error: "Missing lead_id" }, { status: 400 });
+    }
+
+    const updateData: {
+      status?: string;
+      notes?: string;
+    } = {};
+
+    if (typeof status === "string") {
+      updateData.status = status;
+    }
+
+    if (typeof notes === "string") {
+      updateData.notes = notes;
+    }
+
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { error: "Missing lead_id or status" },
+        { error: "Missing status or notes" },
         { status: 400 }
       );
     }
 
     const { data, error } = await supabase
       .from("leads")
-      .update({ status })
+      .update(updateData)
       .eq("id", lead_id)
       .select()
       .single();
