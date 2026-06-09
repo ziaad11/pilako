@@ -12,6 +12,32 @@ function getSupabase() {
   return createClient(supabaseUrl, supabaseAnonKey);
 }
 
+function hasValue(value: string | null | undefined) {
+  if (!value) return false;
+
+  const cleaned = value.toLowerCase().trim();
+
+  return (
+    cleaned !== "" &&
+    cleaned !== "not found" &&
+    cleaned !== "not provided" &&
+    cleaned !== "n/a" &&
+    cleaned !== "unknown"
+  );
+}
+
+function calculateLeadScore(lead: any) {
+  let score = 0;
+
+  if (hasValue(lead.website)) score += 25;
+  if (hasValue(lead.email)) score += 30;
+  if (hasValue(lead.phone)) score += 20;
+  if (hasValue(lead.location)) score += 10;
+  if (hasValue(lead.score)) score += 15;
+
+  return Math.min(score, 100);
+}
+
 export async function GET(req: Request) {
   try {
     const supabase = getSupabase();
@@ -33,7 +59,15 @@ export async function GET(req: Request) {
     }
 
     const allCampaigns = campaigns || [];
-    const allLeads = allCampaigns.flatMap((campaign: any) => campaign.leads || []);
+    const allLeads = allCampaigns.flatMap((campaign: any) =>
+      (campaign.leads || []).map((lead: any) => ({
+        ...lead,
+        campaign_id: campaign.id,
+        campaign_name: campaign.name,
+        campaign_location: campaign.location,
+        campaign_niche: campaign.niche,
+      }))
+    );
 
     const totalCampaigns = allCampaigns.length;
     const totalLeads = allLeads.length;
@@ -53,15 +87,62 @@ export async function GET(req: Request) {
       0
     );
 
+    const averageDealSize =
+      totalLeads > 0 ? Math.round(pipelineValue / totalLeads) : 0;
+
+    const forecastRevenue = Math.round(pipelineValue * 0.2);
+
     const today = new Date().toISOString().slice(0, 10);
 
-    const followUpsDue = allLeads.filter(
-      (lead: any) => lead.follow_up_date && lead.follow_up_date <= today
-    ).length;
+    const followUpsOverdue = allLeads.filter(
+      (lead: any) => lead.follow_up_date && lead.follow_up_date < today
+    );
+
+    const followUpsToday = allLeads.filter(
+      (lead: any) => lead.follow_up_date && lead.follow_up_date === today
+    );
+
+    const followUpsUpcoming = allLeads
+      .filter((lead: any) => lead.follow_up_date && lead.follow_up_date > today)
+      .sort((a: any, b: any) =>
+        String(a.follow_up_date).localeCompare(String(b.follow_up_date))
+      )
+      .slice(0, 8);
 
     const closedDeals = allLeads.filter(
       (lead: any) => lead.status === "Closed"
     ).length;
+
+    const scoredLeads = allLeads.map((lead: any) => {
+      const leadScore = calculateLeadScore(lead);
+
+      return {
+        ...lead,
+        leadScore,
+        temperature:
+          leadScore >= 80 ? "Hot" : leadScore >= 50 ? "Warm" : "Cold",
+      };
+    });
+
+    const hotLeads = scoredLeads.filter((lead: any) => lead.leadScore >= 80).length;
+    const warmLeads = scoredLeads.filter(
+      (lead: any) => lead.leadScore >= 50 && lead.leadScore < 80
+    ).length;
+    const coldLeads = scoredLeads.filter((lead: any) => lead.leadScore < 50).length;
+
+    const topLeads = [...scoredLeads]
+      .sort((a: any, b: any) => b.leadScore - a.leadScore)
+      .slice(0, 8)
+      .map((lead: any) => ({
+        id: lead.id,
+        campaign_id: lead.campaign_id,
+        company: lead.company,
+        location: lead.location,
+        email: lead.email,
+        phone: lead.phone,
+        leadScore: lead.leadScore,
+        temperature: lead.temperature,
+      }));
 
     const topLocations = Object.values(
       allCampaigns.reduce((acc: Record<string, any>, campaign: any) => {
@@ -124,8 +205,17 @@ export async function GET(req: Request) {
       totalEmails,
       conversionRate,
       pipelineValue,
-      followUpsDue,
+      forecastRevenue,
+      averageDealSize,
+      followUpsDue: followUpsOverdue.length + followUpsToday.length,
+      followUpsOverdue: followUpsOverdue.slice(0, 8),
+      followUpsToday: followUpsToday.slice(0, 8),
+      followUpsUpcoming,
       closedDeals,
+      hotLeads,
+      warmLeads,
+      coldLeads,
+      topLeads,
       topLocations,
       topNiches,
       recentCampaigns,
