@@ -30,6 +30,57 @@ type Lead = {
 
 const statuses = ["New", "Contacted", "Interested", "Meeting Booked", "Closed"];
 
+function hasValue(value: string | null | undefined) {
+  if (!value) return false;
+
+  const cleaned = value.toLowerCase().trim();
+
+  return (
+    cleaned !== "" &&
+    cleaned !== "not found" &&
+    cleaned !== "not provided" &&
+    cleaned !== "n/a" &&
+    cleaned !== "unknown"
+  );
+}
+
+function calculateLeadScore(lead: Lead) {
+  let score = 0;
+
+  if (hasValue(lead.website)) score += 25;
+  if (hasValue(lead.email)) score += 30;
+  if (hasValue(lead.phone)) score += 20;
+  if (hasValue(lead.location)) score += 10;
+  if (hasValue(lead.score)) score += 15;
+
+  return Math.min(score, 100);
+}
+
+function getLeadTemperature(score: number) {
+  if (score >= 80) {
+    return {
+      label: "Hot",
+      emoji: "🔥",
+      className: "border-red-400/30 bg-red-400/10 text-red-200",
+    };
+  }
+
+  if (score >= 50) {
+    return {
+      label: "Warm",
+      emoji: "🟡",
+      className: "border-yellow-400/30 bg-yellow-400/10 text-yellow-200",
+    };
+  }
+
+  return {
+    label: "Cold",
+    emoji: "⚪",
+    className: "border-white/10 bg-white/10 text-slate-300",
+  };
+}
+
+
 export default function CampaignDetailsPage() {
   const params = useParams();
   const campaignId = params.id as string;
@@ -39,7 +90,7 @@ export default function CampaignDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("company");
+  const [sortBy, setSortBy] = useState("lead-score");
   const [statusFilter, setStatusFilter] = useState("All");
   const [savingNoteId, setSavingNoteId] = useState<number | null>(null);
   const [savingDealId, setSavingDealId] = useState<number | null>(null);
@@ -250,6 +301,12 @@ export default function CampaignDetailsPage() {
       );
     }
 
+    if (sortBy === "lead-score") {
+      result = [...result].sort(
+        (a, b) => calculateLeadScore(b) - calculateLeadScore(a)
+      );
+    }
+
     if (sortBy === "company") {
       result = [...result].sort((a, b) => a.company.localeCompare(b.company));
     }
@@ -287,6 +344,21 @@ export default function CampaignDetailsPage() {
     count: leads.filter((lead) => (lead.status || "New") === status).length,
   }));
 
+  const scoredLeads = leads.map((lead) => ({
+    ...lead,
+    leadScore: calculateLeadScore(lead),
+  }));
+
+  const hotLeads = scoredLeads.filter((lead) => lead.leadScore >= 80).length;
+  const warmLeads = scoredLeads.filter(
+    (lead) => lead.leadScore >= 50 && lead.leadScore < 80
+  ).length;
+  const coldLeads = scoredLeads.filter((lead) => lead.leadScore < 50).length;
+
+  const bestLead = [...scoredLeads].sort(
+    (a, b) => b.leadScore - a.leadScore
+  )[0];
+
   const pipelineValue = leads.reduce(
     (sum, lead) => sum + Number(lead.deal_value || 0),
     0
@@ -321,29 +393,38 @@ export default function CampaignDetailsPage() {
   function exportLeadsCSV() {
     const headers = [
       "Company",
+      "Lead Score",
+      "Temperature",
       "Website",
       "Email",
       "Phone",
       "Location",
-      "Score",
+      "Original Score",
       "Status",
       "Follow Up Date",
       "Deal Value",
       "Notes",
     ];
 
-    const rows = filteredLeads.map((lead) => [
-      lead.company,
-      lead.website,
-      lead.email,
-      lead.phone,
-      lead.location,
-      lead.score,
-      lead.status || "New",
-      lead.follow_up_date || "",
-      String(lead.deal_value || 0),
-      lead.notes || "",
-    ]);
+    const rows = filteredLeads.map((lead) => {
+      const leadScore = calculateLeadScore(lead);
+      const temperature = getLeadTemperature(leadScore);
+
+      return [
+        lead.company,
+        String(leadScore),
+        temperature.label,
+        lead.website,
+        lead.email,
+        lead.phone,
+        lead.location,
+        lead.score,
+        lead.status || "New",
+        lead.follow_up_date || "",
+        String(lead.deal_value || 0),
+        lead.notes || "",
+      ];
+    });
 
     downloadCSV(`pilako-campaign-${campaignId}-leads.csv`, makeCSV(headers, rows));
   }
@@ -425,6 +506,51 @@ export default function CampaignDetailsPage() {
             </div>
           </div>
         </section>
+
+        <section className="mt-8 grid gap-5 md:grid-cols-4">
+          <div className="rounded-[2rem] border border-red-400/20 bg-red-400/10 p-5">
+            <p className="text-sm text-red-200">Hot Leads</p>
+            <h3 className="mt-2 text-4xl font-black">{hotLeads}</h3>
+          </div>
+
+          <div className="rounded-[2rem] border border-yellow-400/20 bg-yellow-400/10 p-5">
+            <p className="text-sm text-yellow-200">Warm Leads</p>
+            <h3 className="mt-2 text-4xl font-black">{warmLeads}</h3>
+          </div>
+
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <p className="text-sm text-slate-400">Cold Leads</p>
+            <h3 className="mt-2 text-4xl font-black">{coldLeads}</h3>
+          </div>
+
+          <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-5">
+            <p className="text-sm text-cyan-200">Emails Found</p>
+            <h3 className="mt-2 text-4xl font-black">{emailCount}</h3>
+          </div>
+        </section>
+
+        {bestLead ? (
+          <section className="mt-8 rounded-[2rem] border border-cyan-300/20 bg-white/[0.04] p-6">
+            <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
+              Best Lead
+            </p>
+            <div className="mt-4 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+              <div>
+                <h2 className="text-3xl font-black">{bestLead.company}</h2>
+                <p className="mt-2 text-slate-400">
+                  {bestLead.location} • {bestLead.phone}
+                </p>
+              </div>
+
+              <div className="rounded-[2rem] border border-red-400/30 bg-red-400/10 px-6 py-4 text-right">
+                <p className="text-sm text-red-200">Lead Score</p>
+                <h3 className="text-4xl font-black">
+                  {bestLead.leadScore} 🔥
+                </h3>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section className="mt-8 grid gap-5 md:grid-cols-5">
           {pipeline.map((item) => (
@@ -560,6 +686,7 @@ export default function CampaignDetailsPage() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none focus:border-cyan-300/60"
               >
+                <option value="lead-score">Lead score</option>
                 <option value="company">Company</option>
                 <option value="email">Email</option>
                 <option value="location">Location</option>
@@ -578,10 +705,11 @@ export default function CampaignDetailsPage() {
           </div>
 
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[1750px] border-collapse text-left">
+            <table className="w-full min-w-[1850px] border-collapse text-left">
               <thead className="bg-white/[0.06] text-sm text-slate-300">
                 <tr>
                   <th className="px-5 py-4">Company</th>
+                  <th className="px-5 py-4">Lead Score</th>
                   <th className="px-5 py-4">Website</th>
                   <th className="px-5 py-4">Email</th>
                   <th className="px-5 py-4">Phone</th>
@@ -596,17 +724,29 @@ export default function CampaignDetailsPage() {
               <tbody>
                 {filteredLeads.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-5 py-12 text-center text-slate-400">
+                    <td colSpan={10} className="px-5 py-12 text-center text-slate-400">
                       No leads found.
                     </td>
                   </tr>
                 ) : (
-                  filteredLeads.map((lead) => (
-                    <tr
-                      key={lead.id}
-                      className="border-t border-white/10 align-top transition hover:bg-cyan-300/10"
-                    >
-                      <td className="px-5 py-5 font-black">{lead.company}</td>
+                  filteredLeads.map((lead) => {
+                    const leadScore = calculateLeadScore(lead);
+                    const temperature = getLeadTemperature(leadScore);
+
+                    return (
+                      <tr
+                        key={lead.id}
+                        className="border-t border-white/10 align-top transition hover:bg-cyan-300/10"
+                      >
+                        <td className="px-5 py-5 font-black">{lead.company}</td>
+
+                        <td className="px-5 py-5">
+                          <span
+                            className={`inline-flex rounded-full border px-4 py-2 text-sm font-black ${temperature.className}`}
+                          >
+                            {temperature.emoji} {temperature.label} {leadScore}
+                          </span>
+                        </td>
 
                       <td className="px-5 py-5">
                         {lead.website && lead.website !== "Not found" ? (
@@ -733,7 +873,8 @@ export default function CampaignDetailsPage() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
