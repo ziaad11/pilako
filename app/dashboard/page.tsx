@@ -1,9 +1,9 @@
 "use client";
 
+import CityAutocomplete from "./CityAutocomplete";
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import AnalyticsPanel from "./AnalyticsPanel";
-import ChartsPanel from "./ChartsPanel";
 
 type Lead = {
   id: number;
@@ -438,7 +438,8 @@ export default function Dashboard() {
             <h1 className="mt-2 text-3xl font-black">AI Sales Employee</h1>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <a href="/leads" className={`${buttonBase} rounded-full border border-purple-300/30 bg-purple-300/10 px-5 py-2 text-sm font-bold text-purple-100 hover:bg-purple-300 hover:text-black`}>Global Leads</a>
             <a
               href="/campaigns"
               className={`${buttonBase} rounded-full border border-cyan-300/30 bg-cyan-300/10 px-5 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-300 hover:text-black`}
@@ -472,11 +473,9 @@ export default function Dashboard() {
               className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
               placeholder="Niche e.g. law firms"
             />
-            <input
+            <CityAutocomplete
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none placeholder:text-slate-500 focus:border-cyan-300/60"
-              placeholder="Location e.g. Dubai"
+              onChange={setLocation}
             />
             <button
               onClick={handleSearch}
