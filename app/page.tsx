@@ -1,89 +1,93 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 
 const features = [
-  "Find real local leads",
-  "Save campaigns",
-  "CRM pipeline",
-  "AI outreach generator",
-  "Revenue forecast",
+  "Lead search",
+  "Campaign CRM",
+  "AI outreach",
+  "Lead scoring",
   "Follow-up center",
+  "Revenue forecast",
 ];
 
 export default function Home() {
+  const { isSignedIn } = useUser();
+
   return (
     <main className="min-h-screen overflow-hidden bg-[#020617] text-white">
       <section className="relative px-6 py-8">
-        <div className="absolute left-1/2 top-0 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-cyan-300/20 blur-[140px]" />
-        <div className="absolute right-0 top-40 h-[400px] w-[400px] rounded-full bg-fuchsia-500/20 blur-[120px]" />
+        <div className="absolute left-1/2 top-0 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-cyan-300/20 blur-[140px]" />
+        <div className="absolute right-0 top-48 h-[420px] w-[420px] rounded-full bg-fuchsia-500/20 blur-[120px]" />
 
         <div className="relative mx-auto max-w-[1500px]">
           <nav className="flex items-center justify-between rounded-full border border-white/10 bg-white/[0.04] px-6 py-4 backdrop-blur">
-            <a href="/" className="text-2xl font-black tracking-tight">
+            <a href="/" className="text-2xl font-black">
               Pilako<span className="text-cyan-300">.</span>
             </a>
 
             <div className="flex items-center gap-3">
-              <SignedOut>
+              {!isSignedIn && (
                 <SignInButton mode="modal">
                   <button className="rounded-full border border-white/15 px-5 py-2 text-sm font-bold hover:bg-white hover:text-black">
                     Sign in
                   </button>
                 </SignInButton>
-              </SignedOut>
+              )}
 
-              <SignedIn>
-                <a
-                  href="/dashboard"
-                  className="rounded-full bg-cyan-300 px-5 py-2 text-sm font-black text-black hover:bg-cyan-200"
-                >
-                  Dashboard
-                </a>
-                <UserButton />
-              </SignedIn>
+              {isSignedIn && (
+                <>
+                  <a
+                    href="/dashboard"
+                    className="rounded-full bg-cyan-300 px-5 py-2 text-sm font-black text-black hover:bg-cyan-200"
+                  >
+                    Dashboard
+                  </a>
+                  <UserButton />
+                </>
+              )}
             </div>
           </nav>
 
           <div className="grid items-center gap-12 py-24 lg:grid-cols-[1fr_0.9fr]">
             <div>
               <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-200">
-                AI Lead Generation CRM
+                AI sales workspace for lead generation
               </div>
 
               <h1 className="mt-8 max-w-5xl text-6xl font-black leading-[0.95] tracking-tight md:text-8xl">
-                Turn local search into a sales pipeline.
+                Find leads. Score them. Close faster.
               </h1>
 
               <p className="mt-8 max-w-2xl text-xl leading-8 text-slate-300">
-                Pilako finds leads, saves campaigns, scores opportunities,
-                tracks follow-ups, and generates AI outreach from one premium
-                dashboard.
+                Pilako turns local business search into a complete sales
+                pipeline with CRM, AI outreach, follow-ups, lead scoring, and
+                revenue forecasting.
               </p>
 
               <div className="mt-10 flex flex-wrap gap-4">
-                <SignedOut>
+                {!isSignedIn && (
                   <SignInButton mode="modal">
                     <button className="rounded-full bg-cyan-300 px-8 py-4 text-lg font-black text-black shadow-[0_0_60px_rgba(103,232,249,0.35)] hover:bg-cyan-200">
                       Start free
                     </button>
                   </SignInButton>
-                </SignedOut>
+                )}
 
-                <SignedIn>
+                {isSignedIn && (
                   <a
                     href="/dashboard"
                     className="rounded-full bg-cyan-300 px-8 py-4 text-lg font-black text-black shadow-[0_0_60px_rgba(103,232,249,0.35)] hover:bg-cyan-200"
                   >
-                    Open Dashboard
+                    Open dashboard
                   </a>
-                </SignedIn>
+                )}
 
                 <a
-                  href="#features"
+                  href="#pricing"
                   className="rounded-full border border-white/15 bg-white/10 px-8 py-4 text-lg font-bold hover:bg-white hover:text-black"
                 >
-                  See features
+                  View pricing
                 </a>
               </div>
 
@@ -105,11 +109,11 @@ export default function Home() {
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
                   <div>
                     <p className="text-sm text-slate-400">Executive dashboard</p>
-                    <h2 className="text-2xl font-black">Sales overview</h2>
+                    <h2 className="text-2xl font-black">Pipeline overview</h2>
                   </div>
-                  <div className="rounded-full bg-green-400/10 px-4 py-2 text-sm font-bold text-green-200">
+                  <span className="rounded-full bg-green-400/10 px-4 py-2 text-sm font-bold text-green-200">
                     Live
-                  </div>
+                  </span>
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-4">
@@ -158,14 +162,63 @@ export default function Home() {
                 </div>
 
                 <div className="mt-5 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-5">
-                  <p className="text-sm text-cyan-200">AI outreach</p>
+                  <p className="text-sm text-cyan-200">AI outreach preview</p>
                   <p className="mt-3 text-sm leading-6 text-slate-300">
-                    “Hi Team, I noticed your company serves the local market.
-                    I had a quick idea that could help you find more qualified
-                    customers...”
+                    “Hi Team, I noticed your company serves the local market. I
+                    had a quick idea that could help you reach more qualified
+                    customers this month...”
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 text-center">
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">
+              Built for agencies, freelancers, consultants, and sales teams
+            </p>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-4">
+              {["Agency", "Marketing", "Consulting", "SaaS"].map((item) => (
+                <div
+                  key={item}
+                  className="rounded-2xl border border-white/10 bg-black/20 px-6 py-5 font-black text-slate-300"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-6 py-20">
+        <div className="mx-auto grid max-w-[1500px] gap-6 lg:grid-cols-2">
+          <div className="rounded-[3rem] border border-red-400/20 bg-red-400/10 p-8">
+            <p className="text-sm uppercase tracking-[0.3em] text-red-200">
+              Before Pilako
+            </p>
+            <h2 className="mt-4 text-4xl font-black">Manual lead chaos</h2>
+            <div className="mt-8 space-y-4 text-lg text-slate-300">
+              <p>✕ Searching businesses manually</p>
+              <p>✕ Copying data into spreadsheets</p>
+              <p>✕ No lead scoring</p>
+              <p>✕ No follow-up tracking</p>
+              <p>✕ Writing outreach from scratch</p>
+            </div>
+          </div>
+
+          <div className="rounded-[3rem] border border-cyan-300/20 bg-cyan-300/10 p-8">
+            <p className="text-sm uppercase tracking-[0.3em] text-cyan-200">
+              After Pilako
+            </p>
+            <h2 className="mt-4 text-4xl font-black">One AI sales pipeline</h2>
+            <div className="mt-8 space-y-4 text-lg text-slate-300">
+              <p>✓ Search leads by niche and city</p>
+              <p>✓ Save campaigns automatically</p>
+              <p>✓ Score hot, warm, and cold leads</p>
+              <p>✓ Track follow-ups and deal value</p>
+              <p>✓ Generate AI outreach instantly</p>
             </div>
           </div>
         </div>
@@ -175,39 +228,21 @@ export default function Home() {
         <div className="mx-auto max-w-[1500px]">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-              Built for speed
+              Features
             </p>
             <h2 className="mt-4 text-5xl font-black">
-              Everything you need before sending the first message.
+              Everything your sales process needs.
             </h2>
           </div>
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {[
-              [
-                "Find leads",
-                "Search by niche and location, then save clean campaigns.",
-              ],
-              [
-                "Score leads",
-                "Automatically rank hot, warm, and cold opportunities.",
-              ],
-              [
-                "Track pipeline",
-                "Manage status, notes, follow-ups, and deal value.",
-              ],
-              [
-                "Generate outreach",
-                "Create cold emails, follow-ups, and LinkedIn messages.",
-              ],
-              [
-                "Analyze revenue",
-                "See pipeline value, forecast revenue, and top campaigns.",
-              ],
-              [
-                "Search globally",
-                "Find any lead across all campaigns in one place.",
-              ],
+              ["Find leads", "Search businesses by niche and location."],
+              ["Save campaigns", "Keep every search organized inside campaigns."],
+              ["Lead scoring", "Rank opportunities as hot, warm, or cold."],
+              ["CRM pipeline", "Manage status, notes, follow-ups, and deals."],
+              ["AI outreach", "Generate cold emails, follow-ups, and messages."],
+              ["Analytics", "Track pipeline value, forecast, and performance."],
             ].map(([title, text]) => (
               <div
                 key={title}
@@ -216,6 +251,48 @@ export default function Home() {
                 <div className="mb-6 h-12 w-12 rounded-2xl bg-cyan-300/20" />
                 <h3 className="text-2xl font-black">{title}</h3>
                 <p className="mt-4 leading-7 text-slate-400">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" className="px-6 py-20">
+        <div className="mx-auto max-w-[1500px]">
+          <div className="text-center">
+            <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
+              Pricing
+            </p>
+            <h2 className="mt-4 text-5xl font-black">Simple plans</h2>
+            <p className="mt-4 text-slate-400">
+              Pricing is coming soon. Start testing Pilako today.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {[
+              ["Starter", "$29/mo", "For freelancers"],
+              ["Growth", "$79/mo", "For agencies"],
+              ["Agency", "$199/mo", "For teams"],
+            ].map(([plan, price, text]) => (
+              <div
+                key={plan}
+                className="rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-8"
+              >
+                <p className="text-xl font-black">{plan}</p>
+                <h3 className="mt-4 text-5xl font-black">{price}</h3>
+                <p className="mt-3 text-slate-400">{text}</p>
+
+                <div className="mt-8 space-y-3 text-slate-300">
+                  <p>✓ Lead search</p>
+                  <p>✓ Campaign CRM</p>
+                  <p>✓ AI outreach</p>
+                  <p>✓ Analytics dashboard</p>
+                </div>
+
+                <button className="mt-8 w-full rounded-full border border-white/15 bg-white/10 px-6 py-4 font-black hover:bg-white hover:text-black">
+                  Coming soon
+                </button>
               </div>
             ))}
           </div>
@@ -233,22 +310,22 @@ export default function Home() {
           </p>
 
           <div className="mt-8">
-            <SignedOut>
+            {!isSignedIn && (
               <SignInButton mode="modal">
                 <button className="rounded-full bg-white px-8 py-4 text-lg font-black text-black hover:bg-cyan-200">
                   Get started
                 </button>
               </SignInButton>
-            </SignedOut>
+            )}
 
-            <SignedIn>
+            {isSignedIn && (
               <a
                 href="/dashboard"
                 className="inline-block rounded-full bg-white px-8 py-4 text-lg font-black text-black hover:bg-cyan-200"
               >
                 Go to dashboard
               </a>
-            </SignedIn>
+            )}
           </div>
         </div>
       </section>
