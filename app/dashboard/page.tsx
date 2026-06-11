@@ -430,7 +430,7 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen bg-[#020617] text-white">
       <div className="mx-auto max-w-[1600px] px-6 py-8">
-        <nav className="flex items-center justify-between">
+        <nav className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
               Pilako
