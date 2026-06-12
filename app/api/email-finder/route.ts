@@ -26,8 +26,30 @@ function extractEmails(text: string) {
   const matches =
     text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
 
-  return [...new Set(matches)]
+  return matches;
+}
+
+function extractMailto(html: string) {
+  const matches = html.match(/mailto:([^"'? <]+)/gi) || [];
+
+  return matches.map((item) =>
+    item.replace(/mailto:/i, "").trim()
+  );
+}
+
+function cleanEmails(emails: string[]) {
+  return [...new Set(emails)]
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email.includes("@"))
     .filter((email) => !email.includes("example.com"))
+    .filter((email) => !email.includes(".png"))
+    .filter((email) => !email.includes(".jpg"))
+    .filter((email) => !email.includes(".jpeg"))
+    .filter((email) => !email.includes(".webp"))
+    .filter((email) => !email.includes(".svg"))
+    .filter((email) => !email.includes("sentry"))
+    .filter((email) => !email.includes("wixpress"))
+    .filter((email) => !email.includes("domain.com"))
     .slice(0, 3);
 }
 
@@ -39,7 +61,9 @@ async function fetchPage(url: string) {
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 PilakoBot/1.0",
+        "User-Agent":
+          "Mozilla/5.0 (compatible; PilakoBot/1.0; +https://pilako.com)",
+        Accept: "text/html,application/xhtml+xml",
       },
     });
 
@@ -69,20 +93,39 @@ export async function POST(req: Request) {
         const baseUrl = normalizeUrl(lead.website);
 
         if (!baseUrl) {
-          return lead;
+          return {
+            ...lead,
+            email: lead.email || "Not found",
+          };
         }
 
+        const root = baseUrl.replace(/\/$/, "");
+
         const pagesToCheck = [
-          baseUrl,
-          `${baseUrl.replace(/\/$/, "")}/contact`,
-          `${baseUrl.replace(/\/$/, "")}/about`,
+          root,
+          `${root}/contact`,
+          `${root}/contact-us`,
+          `${root}/contacts`,
+          `${root}/about`,
+          `${root}/about-us`,
+          `${root}/team`,
+          `${root}/our-team`,
+          `${root}/company`,
+          `${root}/support`,
+          `${root}/help`,
         ];
 
         let foundEmails: string[] = [];
 
         for (const page of pagesToCheck) {
           const html = await fetchPage(page);
-          const emails = extractEmails(html);
+
+          if (!html) continue;
+
+          const emails = cleanEmails([
+            ...extractEmails(html),
+            ...extractMailto(html),
+          ]);
 
           if (emails.length > 0) {
             foundEmails = emails;
